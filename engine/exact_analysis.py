@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import math
+import weakref
 from collections.abc import Iterable, Mapping
 from typing import Any
 
@@ -34,6 +35,8 @@ EXACT_VALUE_KIND = "probability_weight"
 CANONICAL_STOP_CODONS = ("TAA", "TAG", "TGA")
 EXACT_REL_TOL = 1e-12
 EXACT_ABS_TOL = 1e-12
+_DERIVED_FRAME_CACHE: dict[int, dict[tuple[Any, ...], pd.DataFrame]] = {}
+_DERIVED_FRAME_FINALIZERS: dict[int, weakref.finalize] = {}
 
 CATEGORY_SCHEMA = (
     ("generation", "int64"),
@@ -104,6 +107,35 @@ def _typed_frame(
     frame = pd.DataFrame.from_records(rows, columns=columns)
     frame = frame.astype({column: dtype for column, dtype in schema})
     return frame.reset_index(drop=True)
+
+
+def _analysis_frame_cache(analysis: ExactAnalysisResult) -> dict[tuple[Any, ...], pd.DataFrame]:
+    cache_key = id(analysis)
+    cache = _DERIVED_FRAME_CACHE.get(cache_key)
+    if cache is None:
+        cache = {}
+        _DERIVED_FRAME_CACHE[cache_key] = cache
+        try:
+            _DERIVED_FRAME_FINALIZERS[cache_key] = weakref.finalize(
+                analysis,
+                _DERIVED_FRAME_CACHE.pop,
+                cache_key,
+                None,
+            )
+        except TypeError:
+            pass
+    return cache
+
+
+def _cached_frame(
+    analysis: ExactAnalysisResult,
+    key: tuple[Any, ...],
+    factory: Any,
+) -> pd.DataFrame:
+    cache = _analysis_frame_cache(analysis)
+    if key not in cache:
+        cache[key] = factory()
+    return cache[key].copy(deep=True)
 
 
 def _validate_generation_count(n_generations: int) -> None:
@@ -435,10 +467,14 @@ def get_exact_category_metrics(
     _scope_start_codons(start_scope, start_key)
     if start_scope == "population":
         return analysis.population_category_metrics.copy(deep=True)
-    return _category_metrics(
-        analysis.simulation,
-        start_scope=start_scope,
-        start_key=start_key,
+    return _cached_frame(
+        analysis,
+        ("category_metrics", start_scope, start_key),
+        lambda: _category_metrics(
+            analysis.simulation,
+            start_scope=start_scope,
+            start_key=start_key,
+        ),
     )
 
 
@@ -452,12 +488,17 @@ def get_exact_survivor_fractions(
     _scope_start_codons(start_scope, start_key)
     if start_scope == "population":
         return analysis.population_survivor_fractions.copy(deep=True)
-    categories = get_exact_category_metrics(
+    return _cached_frame(
         analysis,
-        start_scope=start_scope,
-        start_key=start_key,
+        ("survivor_fractions", start_scope, start_key),
+        lambda: _survivor_fractions(
+            get_exact_category_metrics(
+                analysis,
+                start_scope=start_scope,
+                start_key=start_key,
+            )
+        ),
     )
-    return _survivor_fractions(categories)
 
 
 def get_exact_survival_by_start(
@@ -470,17 +511,20 @@ def get_exact_survival_by_start(
     _scope_start_codons(start_scope, start_key)
     if start_scope == "population":
         return analysis.population_survival.copy(deep=True)
-    categories = get_exact_category_metrics(
+    return _cached_frame(
         analysis,
-        start_scope=start_scope,
-        start_key=start_key,
-    )
-    return _survival_by_start(
-        analysis.simulation,
-        analysis.start_weights,
-        categories,
-        start_scope=start_scope,
-        start_key=start_key,
+        ("survival_by_start", start_scope, start_key),
+        lambda: _survival_by_start(
+            analysis.simulation,
+            analysis.start_weights,
+            get_exact_category_metrics(
+                analysis,
+                start_scope=start_scope,
+                start_key=start_key,
+            ),
+            start_scope=start_scope,
+            start_key=start_key,
+        ),
     )
 
 
@@ -494,11 +538,15 @@ def get_exact_stop_outcomes(
     _scope_start_codons(start_scope, start_key)
     if start_scope == "population":
         return analysis.population_stop_outcomes.copy(deep=True)
-    return _stop_outcomes(
-        analysis.simulation,
-        analysis.start_weights,
-        start_scope=start_scope,
-        start_key=start_key,
+    return _cached_frame(
+        analysis,
+        ("stop_outcomes", start_scope, start_key),
+        lambda: _stop_outcomes(
+            analysis.simulation,
+            analysis.start_weights,
+            start_scope=start_scope,
+            start_key=start_key,
+        ),
     )
 
 
@@ -516,6 +564,18 @@ def get_exact_codon_outcomes(
             f"Invalid scientific scope generation={generation}."
         )
 
+    return _cached_frame(
+        analysis,
+        ("codon_outcomes", start_codon, generation),
+        lambda: _codon_outcomes(analysis, start_codon, generation),
+    )
+
+
+def _codon_outcomes(
+    analysis: ExactAnalysisResult,
+    start_codon: str,
+    generation: int,
+) -> pd.DataFrame:
     generation_index = generation - 1
     live = analysis.simulation.track_data["per_gen_codon_from"][generation_index].get(
         start_codon,
@@ -581,6 +641,27 @@ def get_exact_convergence(
             f"Invalid scientific scope convergence_basis={basis}."
         )
     tolerance_value = float(tolerance)
+    return _cached_frame(
+        analysis,
+        ("convergence", start_scope, start_key, basis, tolerance_value),
+        lambda: _convergence(
+            analysis,
+            start_scope=start_scope,
+            start_key=start_key,
+            basis=basis,
+            tolerance_value=tolerance_value,
+        ),
+    )
+
+
+def _convergence(
+    analysis: ExactAnalysisResult,
+    *,
+    start_scope: StartScope,
+    start_key: str,
+    basis: ConvergenceBasis,
+    tolerance_value: float,
+) -> pd.DataFrame:
     categories = get_exact_category_metrics(
         analysis,
         start_scope=start_scope,

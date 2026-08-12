@@ -71,6 +71,10 @@ EXACT_SAMPLED_COMPARISON_SCHEMA = (
     ("confidence_upper", "Float64"),
     ("within_interval", "boolean"),
 )
+_EXPECTED_SIGNATURE_CACHE: dict[
+    tuple[tuple[tuple[str, str], ...], int],
+    tuple[Any, ...],
+] = {}
 
 
 class _MetricContract(NamedTuple):
@@ -255,14 +259,19 @@ def _expected_signature(
     schema: tuple[tuple[str, str], ...],
     row_count: int,
 ) -> tuple[Any, ...]:
-    return (
-        tuple(column for column, _dtype in schema),
-        tuple(dtype for _column, dtype in schema),
-        "RangeIndex",
-        0,
-        row_count,
-        1,
-    )
+    cache_key = (schema, row_count)
+    cached = _EXPECTED_SIGNATURE_CACHE.get(cache_key)
+    if cached is None:
+        cached = (
+            tuple(column for column, _dtype in schema),
+            tuple(dtype for _column, dtype in schema),
+            "RangeIndex",
+            0,
+            row_count,
+            1,
+        )
+        _EXPECTED_SIGNATURE_CACHE[cache_key] = cached
+    return cached
 
 
 def _validate_schema(

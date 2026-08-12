@@ -29,6 +29,11 @@ CANONICAL_STOP_ORDER = tuple(
     codon for codon in CODON_TABLE if codon in STOP_CODONS
 )
 CANONICAL_CATEGORY_ORDER = tuple(PROPERTY_LABELS.values())
+CODON_TO_AMINO_ACID = {codon: CODON_TABLE[codon] for codon in CODON_TABLE}
+CODON_TO_CATEGORY = {
+    codon: get_primary_group_name(amino_acid)
+    for codon, amino_acid in CODON_TO_AMINO_ACID.items()
+}
 
 
 @dataclass
@@ -84,7 +89,7 @@ def _freeze_generation(
     stops_by_start_codon: Counter[str] = Counter()
     stops_by_start_trait: Counter[str] = Counter()
     for start_codon in VALID_CODONS:
-        start_trait = get_primary_group_name(CODON_TABLE[start_codon])
+        start_trait = CODON_TO_CATEGORY[start_codon]
         for stop_codon in CANONICAL_STOP_ORDER:
             count = stop_codon_by_start_codon[start_codon][stop_codon]
             if count:
@@ -139,7 +144,7 @@ def _initial_final_counts(
     for codon in VALID_CODONS:
         count = start_counts[codon]
         if count:
-            amino_acid_counts[CODON_TABLE[codon]] += count
+            amino_acid_counts[CODON_TO_AMINO_ACID[codon]] += count
     final_live_by_start_codon = {
         codon: Counter({codon: start_counts[codon]}) if start_counts[codon] else Counter()
         for codon in VALID_CODONS
@@ -176,8 +181,7 @@ def run_aggregated_experiment(
     )
 
     for start_codon in VALID_CODONS:
-        start_amino_acid = CODON_TABLE[start_codon]
-        start_trait = get_primary_group_name(start_amino_acid)
+        start_trait = CODON_TO_CATEGORY[start_codon]
         for _copy_number in range(1, start_counts[start_codon] + 1):
             current_codon = start_codon
             for generation_index in range(n_generations):
@@ -195,8 +199,8 @@ def run_aggregated_experiment(
                     state.new_stop_codon_by_start_codon[start_codon][current_codon] += 1
                     break
 
-                current_amino_acid = CODON_TABLE[current_codon]
-                current_trait = get_primary_group_name(current_amino_acid)
+                current_amino_acid = CODON_TO_AMINO_ACID[current_codon]
+                current_trait = CODON_TO_CATEGORY[current_codon]
                 state.live_codon[current_codon] += 1
                 state.live_amino_acid[current_amino_acid] += 1
                 state.live_category[current_trait] += 1
