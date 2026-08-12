@@ -73,3 +73,14 @@ See `engine/README.md` for the engine API and scientific contracts.
 ## Deferred work
 
 Phase 2 intentionally does not change probability validation, optimize/vectorize the exact algorithm, redesign caching, expose aggregated sampling in Streamlit, or add the planned API, frontend, job queue, persistence, exports, authentication, or deployment architecture. Phase 3 may optimize only behind the approved exact and sampled contracts and must prove equivalence independently.
+
+## Phase 4 local API
+
+Install the approved Phase 4 API dependencies, then run the local FastAPI adapter:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn api.main:app --reload
+```
+
+The initial service exposes `GET /health` and `GET /api/v1/metadata`. Simulation and comparison endpoints are added by later Phase 4 implementation steps.
