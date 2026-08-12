@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "generated_by_tests": false,
+  "page": {
+    "title": "Codon Category Tracking Lab",
+    "caption": "Track exact starting codons through amino-acid property categories, with integer copy simulations and exact probability weights side by side when needed.",
+    "header": "Simulation",
+    "default_exception_count": 0,
+    "default_error_count": 0,
+    "default_plotly_count": 11,
+    "default_dataframe_count": 1,
+    "default_dataframe_shape": [61, 5],
+    "default_dataframe_columns": ["codon", "aa", "start_category", "no_more_change", "status"]
+  },
+  "segmented_controls": [
+    {
+      "type": "button_group",
+      "label": "Workspace",
+      "key": "workspace",
+      "value": "Codon focus",
+      "options": ["Codon focus", "Whole population"]
+    },
+    {
+      "type": "button_group",
+      "label": "View",
+      "key": "view",
+      "value": "Your probability",
+      "options": ["Your probability", "Preset", "Compare both"]
+    },
+    {
+      "type": "button_group",
+      "label": "Data type",
+      "key": "data_type",
+      "value": "Sampled copies",
+      "options": ["Sampled copies", "Exact probability"]
+    },
+    {
+      "type": "button_group",
+      "label": "No more change basis",
+      "key": "no_more_basis",
+      "value": "Current computation",
+      "options": ["Current computation", "Exact surviving trait fractions"]
+    }
+  ],
+  "number_inputs": [
+    {"label": "Generations", "value": 20, "min": 1.0, "max": 2000.0, "step": 1.0},
+    {"label": "Copies per codon", "value": 100, "min": 1.0, "max": 1000000.0, "step": 1.0},
+    {"label": "Sampling seed", "value": 7, "min": 0.0, "max": 999999.0, "step": 1.0},
+    {"label": "Alpha for exact surviving fractions", "value": 0.01, "min": 0.0, "max": 1.0, "step": 0.001}
+  ],
+  "text_inputs": [
+    {"label": "A->T (= G<->C)", "key": "user_at", "value": "1/3", "placeholder": "e.g. 1/3\u2026"},
+    {"label": "A->G (= T<->C)", "key": "user_ag", "value": "1/3", "placeholder": "e.g. 1/3\u2026"},
+    {"label": "A->C (= T<->G)", "key": "user_ac", "value": "1/3", "placeholder": "e.g. 1/3\u2026"},
+    {"label": "A->T (= G<->C)", "key": "preset_at", "value": "0.16666666666666666", "placeholder": "e.g. 1/3\u2026"},
+    {"label": "A->G (= T<->C)", "key": "preset_ag", "value": "0.6666666666666666", "placeholder": "e.g. 1/3\u2026"},
+    {"label": "A->C (= T<->G)", "key": "preset_ac", "value": "0.16666666666666666", "placeholder": "e.g. 1/3\u2026"}
+  ],
+  "selectboxes": [
+    {
+      "label": "Selected codon",
+      "key": "selected_codon",
+      "value": "AAA",
+      "option_count": 61,
+      "first_option": "AAA \u00b7 Lys \u00b7 Positively charged",
+      "last_option": "TTT \u00b7 Phe \u00b7 Hydrophobic"
+    },
+    {
+      "label": "Compare with codon",
+      "key": "compare_codon",
+      "value": "AAC",
+      "option_count": 61,
+      "first_option": "AAA \u00b7 Lys \u00b7 Positively charged",
+      "last_option": "TTT \u00b7 Phe \u00b7 Hydrophobic"
+    }
+  ],
+  "slider": {
+    "label": "Codon-outcome generation",
+    "value": 5,
+    "min": 1.0,
+    "max": 20.0,
+    "step": 1.0
+  },
+  "default_charts": [
+    {"title": "AAA: category counts", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAA: trait fraction among surviving copies", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAA: stop behavior", "trace_names": ["new stops", "cumulative stops"]},
+    {"title": "AAA: category counts", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAA: trait fraction among surviving copies", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAA: stop behavior", "trace_names": ["new stops", "cumulative stops"]},
+    {"title": "AAC: category counts", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAC: trait fraction among surviving copies", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+    {"title": "AAC: stop behavior", "trace_names": ["new stops", "cumulative stops"]},
+    {"title": "AAA: codon outcomes at generation 5", "trace_names": ["Stop", "Hydrophobic", "Polar uncharged", "Positively charged", "Special (Cys/Gly/Pro)", "Negatively charged"]},
+    {"title": "No more category change by starting codon", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Special (Cys/Gly/Pro)", "Negatively charged"]}
+  ],
+  "whole_population": {
+    "plotly_count": 6,
+    "dataframe_count": 1,
+    "subheaders": [
+      "All-codon population overview",
+      "User probability",
+      "Trait codon survival",
+      "User probability",
+      "Your probability",
+      "Preset probability"
+    ],
+    "trait_selectbox": {
+      "label": "Trait drilldown",
+      "key": "whole_population_trait",
+      "value": "Hydrophobic",
+      "options": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]
+    },
+    "charts": [
+      {"title": "User probability: all-codon trait fraction among survivors", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+      {"title": "User probability: survival by starting trait", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+      {"title": "User probability: stop percentage by starting trait", "trace_names": ["Hydrophobic", "Polar uncharged", "Positively charged", "Negatively charged", "Special (Cys/Gly/Pro)"]},
+      {"title": "User probability: total surviving vs stopped", "trace_names": ["Surviving", "Stopped"]},
+      {"title": "User probability: Hydrophobic codon survival", "trace_names": ["ATA", "ATC", "ATG", "ATT", "CTA", "CTC", "CTG", "CTT", "GCA", "GCC", "GCG", "GCT", "GTA", "GTC", "GTG", "GTT", "TGG", "TTA", "TTC", "TTG", "TTT"]},
+      {"title": "User probability: Hydrophobic amino-acid survival", "trace_names": ["Ala", "Ile", "Leu", "Met", "Phe", "Trp", "Val"]}
+    ]
+  },
+  "query_binding": {
+    "injected": {
+      "workspace": "Whole population",
+      "view": "Preset",
+      "data_type": "Exact probability",
+      "no_more_basis": "Exact surviving trait fractions",
+      "selected_codon": "TGG"
+    },
+    "retained_query_params": {
+      "workspace": ["Whole population"],
+      "view": ["Preset"],
+      "data_type": ["Exact probability"],
+      "no_more_basis": ["Exact surviving trait fractions"]
+    },
+    "segmented_values": ["Whole population", "Preset", "Exact probability", "Exact surviving trait fractions"],
+    "selectbox_values": ["Hydrophobic", "AAA", "AAC"]
+  },
+  "invalid_probability_error": "Cannot parse probability: 'abc'. Use a decimal, percent, or fraction like 0.25, 25%, or 1/4.",
+  "accessibility_source_contract": [
+    "class=\"skip-link\"",
+    "href=\"#main-results\"",
+    "@media (prefers-reduced-motion: reduce)",
+    "role=\"status\"",
+    "aria-live=\"polite\"",
+    "aria-hidden=\"true\""
+  ],
+  "theme": {
+    "base": "light",
+    "primaryColor": "#0F766E",
+    "backgroundColor": "#F8FAFC",
+    "secondaryBackgroundColor": "#EEF2F7",
+    "textColor": "#111827",
+    "showWidgetBorder": true,
+    "showSidebarBorder": true,
+    "baseRadius": "8px"
+  }
+}

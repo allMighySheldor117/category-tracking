@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "comparison_policy": {
+    "same_process": "Exact structural SHA-256 over ordered containers and float.hex() values.",
+    "external_fixture": "Exact on Python 3.13 in this baseline; reviewed numeric summaries remain readable below.",
+    "generated_by_tests": false
+  },
+  "constants": {
+    "codon_table_digest": "b80bcd62be96a06cfe74a82aea5eaced5183b4b253f4ee049df4f2bd30fbe424",
+    "valid_codons_digest": "077d71ef4c867202d3ad4a75bc370358f3f202185a827a4565de42e6a170fd08",
+    "aa_properties_digest": "68d7948eac9a8748224d85646491d41015058143918d39333cce38c8dac8b0af",
+    "property_groups_digest": "8493cfba58e0514b48bb461395a316c857030f48b73cd13fc98fa77ffb13ffdd",
+    "codon_count": 64,
+    "valid_count": 61,
+    "stop_codons": ["TAA", "TAG", "TGA"],
+    "first_last_valid": ["AAA", "TTT"],
+    "tgg": ["Trp", "Hydrophobic"],
+    "preset_hex": [
+      "0x1.5555555555555p-3",
+      "0x1.5555555555555p-1",
+      "0x1.5555555555555p-3"
+    ]
+  },
+  "public_surface": {
+    "category_tracking": {
+      "get_primary_group": "(aa)",
+      "get_primary_group_name": "(aa)",
+      "property_stop_counter": "(stop_data)",
+      "property_color_map_by_name": "()",
+      "convergence_generation": "(series, threshold=0.0001)",
+      "convergence_text": "(series, threshold=0.0001)",
+      "count_codons_for_aa": "(aa)",
+      "get_codon_count": "(aa)",
+      "parse_prob": "(s)",
+      "build_substitution_matrix": "(p_at, p_ag, p_ac)",
+      "run_simulation": "(n_generations, sub_matrix, start_weights=None)",
+      "run_experiment": "(n_generations, sub_matrix, start_weights)"
+    },
+    "category_tracking_web": {
+      "run_cached": "(n_gen: 'int', copies: 'int', at: 'float', ag: 'float', ac: 'float', seed: 'int')",
+      "codon_label": "(codon: 'str') -> 'str'",
+      "sampled_category_series": "(records: 'Iterable[dict]', codon: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_category_series": "(track_data: 'dict', codon: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "sampled_all_category_series": "(records: 'Iterable[dict]', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_all_category_series": "(track_data: 'dict', n_gen: 'int') -> 'pd.DataFrame'",
+      "sampled_start_trait_survival_series": "(records: 'Iterable[dict]', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_start_trait_survival_series": "(track_data: 'dict', n_gen: 'int') -> 'pd.DataFrame'",
+      "sampled_start_trait_stop_percentage_series": "(records: 'Iterable[dict]', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_start_trait_stop_percentage_series": "(track_data: 'dict', n_gen: 'int', copies_per_codon: 'float') -> 'pd.DataFrame'",
+      "codons_for_trait": "(trait: 'str') -> 'list[str]'",
+      "sampled_trait_codon_survival_series": "(records: 'Iterable[dict]', trait: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_trait_codon_survival_series": "(track_data: 'dict', trait: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "sampled_trait_aa_survival_series": "(records: 'Iterable[dict]', trait: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_trait_aa_survival_series": "(track_data: 'dict', trait: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "surviving_category_fraction_series": "(cat_df: 'pd.DataFrame') -> 'pd.DataFrame'",
+      "survival_balance_series": "(cat_df: 'pd.DataFrame', total_start_copies: 'float') -> 'pd.DataFrame'",
+      "trait_codon_survival_summary": "(df: 'pd.DataFrame', copies_per_codon: 'float') -> 'pd.DataFrame'",
+      "sampled_stop_series": "(records: 'Iterable[dict]', codon: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "exact_stop_series": "(track_data: 'dict', codon: 'str', n_gen: 'int') -> 'pd.DataFrame'",
+      "no_more_change_from_df": "(df: 'pd.DataFrame', tolerance: 'float' = 0.0, stable_status: 'str' = 'category counts stable') -> 'Tuple[str, str]'",
+      "exact_no_more_change": "(track_data: 'dict', codon: 'str', n_gen: 'int', basis: 'str' = 'Current computation', alpha: 'float' = 0.01) -> 'Tuple[str, str]'",
+      "no_more_change_note": "(basis: 'str', alpha: 'float' = 0.01) -> 'str'",
+      "all_codon_no_more_change": "(records: 'Iterable[dict]', track_data: 'dict', n_gen: 'int', display_mode: 'str', no_more_basis: 'str' = 'Current computation', no_more_alpha: 'float' = 0.01) -> 'pd.DataFrame'"
+    }
+  },
+  "parsing": {
+    "1/4": "0x1.0000000000000p-2",
+    "25%": "0x1.0000000000000p-2",
+    "0.25": "0x1.0000000000000p-2",
+    "invalid": "Cannot parse probability: 'abc'"
+  },
+  "matrix_digest": "fb2557af06c5f9744c5c79dbbe21c86865bb2f875667d84ec6934c94f29fdd98",
+  "legacy_result_contracts": {
+    "exact_tuple_length": 11,
+    "exact_top_level_types": [
+      "Counter", "Counter", "Counter", "Counter", "Counter", "Counter",
+      "list", "dict", "dict", "dict", "dict"
+    ],
+    "sampled_tuple_length": 4,
+    "sampled_top_level_types": ["list", "Counter", "Counter", "dict"],
+    "record_key_order": [
+      "start", "start_aa", "final", "final_aa", "hit_stop", "stop_gen", "copy", "path"
+    ],
+    "stats_key_order": [
+      "n_starts", "total_start_copies", "n_generations", "unique_aas_seen",
+      "unique_codons_seen", "total_enc_weight", "total_fin_weight", "total_stop_prob"
+    ],
+    "stop_key_order": [
+      "by_start_aa", "by_start_prop", "by_start_codon", "by_pre_codon",
+      "by_stop_codon", "detail", "total_prob"
+    ],
+    "track_key_order": [
+      "per_gen_cat_from", "per_gen_aa_from", "per_gen_aa_codon_from",
+      "per_gen_codon_from", "per_gen_stop_cat_from", "per_gen_stop_aa_from",
+      "per_gen_stop_codon_from", "per_gen_stop_codon_to"
+    ]
+  },
+  "exact_cases": {
+    "empty": {
+      "generations": 2,
+      "matrix": "nonuniform",
+      "start_weights": {},
+      "digest": "b5797af251c83893eea978fec2d6e09a5ca3cdf0f079a166c5c06bf4734635e9",
+      "stats": {
+        "type": "dict",
+        "items": [
+          ["n_starts", 0],
+          ["total_start_copies", 0],
+          ["n_generations", 2],
+          ["unique_aas_seen", 0],
+          ["unique_codons_seen", 0],
+          ["total_enc_weight", 0],
+          ["total_fin_weight", 0],
+          ["total_stop_prob", 0]
+        ]
+      },
+      "final_codon_count": 0,
+      "stop_codons": {"type": "Counter", "items": []}
+    },
+    "zero_generation_sparse": {
+      "generations": 0,
+      "matrix": "nonuniform",
+      "start_weights": {"AAA": 2.5, "CAA": 0.0, "TGG": 1.0},
+      "digest": "e875b46cc71423038c9041d69ad26f4b8831a1c98fdae32a463a0cf56ef0b34d",
+      "stats": {
+        "type": "dict",
+        "items": [
+          ["n_starts", 2],
+          ["total_start_copies", {"float_hex": "0x1.c000000000000p+1"}],
+          ["n_generations", 0],
+          ["unique_aas_seen", 2],
+          ["unique_codons_seen", 2],
+          ["total_enc_weight", {"float_hex": "0x1.c000000000000p+1"}],
+          ["total_fin_weight", {"float_hex": "0x1.c000000000000p+1"}],
+          ["total_stop_prob", 0]
+        ]
+      },
+      "final_codon_count": 2,
+      "stop_codons": {"type": "Counter", "items": []}
+    },
+    "single_tgg_nonuniform": {
+      "generations": 2,
+      "matrix": "nonuniform",
+      "start_weights": {"TGG": 2.0},
+      "digest": "adbf66f9d058b41b693a1c4f2b24c404551057300923920f8bcabf5f81e378e8",
+      "stats": {
+        "type": "dict",
+        "items": [
+          ["n_starts", 1],
+          ["total_start_copies", {"float_hex": "0x1.0000000000000p+1"}],
+          ["n_generations", 2],
+          ["unique_aas_seen", 16],
+          ["unique_codons_seen", 34],
+          ["total_enc_weight", {"float_hex": "0x1.2740da740da74p+2"}],
+          ["total_fin_weight", {"float_hex": "0x1.47ae147ae147ap+0"}],
+          ["total_stop_prob", {"float_hex": "0x1.70a3d70a3d709p-1"}]
+        ]
+      },
+      "final_codon_count": 34,
+      "stop_codons": {
+        "type": "Counter",
+        "items": [
+          ["TAG", {"float_hex": "0x1.70a3d70a3d709p-2"}],
+          ["TGA", {"float_hex": "0x1.70a3d70a3d709p-2"}]
+        ]
+      }
+    },
+    "all_codons_uniform": {
+      "generations": 2,
+      "matrix": "uniform",
+      "start_weights": "all_valid_codons_one",
+      "digest": "6cf8830ef26ed3488d1ee79d2704f9ac4c00a125cd63d732fa758a98f83ee6c1",
+      "stats": {
+        "type": "dict",
+        "items": [
+          ["n_starts", 61],
+          ["total_start_copies", {"float_hex": "0x1.e800000000000p+5"}],
+          ["n_generations", 2],
+          ["unique_aas_seen", 20],
+          ["unique_codons_seen", 61],
+          ["total_enc_weight", {"float_hex": "0x1.5f7b425ed0985p+7"}],
+          ["total_fin_weight", {"float_hex": "0x1.c25ed097b425fp+5"}],
+          ["total_stop_prob", {"float_hex": "0x1.2d097b425ed11p+2"}]
+        ]
+      },
+      "final_codon_count": 61,
+      "stop_codons": {
+        "type": "Counter",
+        "items": [
+          ["TAA", {"float_hex": "0x1.6b74f03291628p+0"}],
+          ["TGA", {"float_hex": "0x1.a4587e6b74f0ep+0"}],
+          ["TAG", {"float_hex": "0x1.a4587e6b74f0ep+0"}]
+        ]
+      }
+    }
+  },
+  "analysis_cases": {
+    "exact_category_tgg": {
+      "digest": "1e563081eb41f0dd0e1af0fc843993270028a324fa2d28de3d0b2bb847ecc595",
+      "columns": ["generation", "category", "value"],
+      "dtypes": ["int64", "object", "float64"],
+      "row_count": 10
+    },
+    "exact_stop_tgg": {
+      "digest": "592d75aa15b1277d34f93157e3541e07c5ef07fdabd2343e0fea1f0300aee8a5",
+      "columns": ["generation", "new_stops", "cumulative_stops"],
+      "dtypes": ["int64", "float64", "float64"],
+      "row_count": 2,
+      "final_cumulative_hex": "0x1.70a3d70a3d70ap-1"
+    },
+    "surviving_fraction_tgg": {
+      "digest": "ed7f53c6d592bc4fb8348454677d399de5c74c3404288478a7d1c7c9c1bb904d",
+      "columns": ["generation", "category", "value", "surviving"],
+      "dtypes": ["int64", "object", "float64", "float64"],
+      "row_count": 10,
+      "generation_fraction_sums": {"1": "0x1.0000000000000p+0", "2": "0x1.0000000000000p+0"}
+    },
+    "no_more_change_counts": ["1", "constant state starts: category counts stable"],
+    "no_more_change_fractions": [
+      "2", "constant state starts: exact surviving fractions stable within alpha=0.01"
+    ]
+  },
+  "sampled_cases": {
+    "empty": {
+      "seed": 123,
+      "generations": 2,
+      "start_weights": {},
+      "result_digest": "ad907101cdbaf39008d2d3d32c89b5e0424f6ae2ca9daec5d4fd779a7f891b20",
+      "record_count": 0,
+      "stop_count": 0,
+      "paths": [],
+      "rng_unchanged": true
+    },
+    "multiple_sparse_nonuniform": {
+      "seed": 314159,
+      "generations": 3,
+      "start_weights": {"AAA": 2, "CAA": 0, "TGG": 3},
+      "before_state_digest": "b8389b0e04ca5f9cd30d8ead2885abaa0a53b8d6ebc5ea5f03753e8664ad2511",
+      "result_digest": "3c74975dd0efe50a7041e2a75b50563fccd033377c797d30968f14cda087a637",
+      "after_state_digest": "6942678a4fa824063c6031fe63e300f2d00aa6554c620a08a1eaaba9029f5344",
+      "record_count": 5,
+      "stop_count": 1,
+      "paths": [
+        ["AAA", "CAA", "AAA", "AGA"],
+        ["AAA", "AAC", "AAT", "CAT"],
+        ["TGG", "TGC", "GGC", "GAC"],
+        ["TGG", "CGG", "CAG", "CTG"],
+        ["TGG", "TGA"]
+      ]
+    },
+    "early_stop_nonuniform": {
+      "seed": 2,
+      "generations": 3,
+      "start_weights": {"TGG": 4},
+      "before_state_digest": "58885820f0dbccd6e9be43790abfbbfd7621e98094bfb423b78f4ccade839ed5",
+      "result_digest": "a30eb6c3b65099f7681fb228792f2eb21a7f1914148278edca54e68c45d1a8d8",
+      "after_state_digest": "7aa5b6f0d848a0280780d438ebbea13b561969419054dd49f3bf490f21d50686",
+      "record_count": 4,
+      "stop_count": 1,
+      "paths": [
+        ["TGG", "AGG", "ATG", "ATT"],
+        ["TGG", "TAG"],
+        ["TGG", "CGG", "CGC", "CCC"],
+        ["TGG", "TGT", "TGG", "TGT"]
+      ]
+    },
+    "zero_generation": {
+      "seed": 99,
+      "generations": 0,
+      "start_weights": {"AAA": 2, "TGG": 1},
+      "before_state_digest": "cc5b2d51572016bde27ac16e9a94407e3931a2bc79968d41065cdb046ef10e9f",
+      "result_digest": "a56500ef361ec6a1e55dd65a39dd048b44185c6945c776b0d96cc28b8752d997",
+      "after_state_digest": "cc5b2d51572016bde27ac16e9a94407e3931a2bc79968d41065cdb046ef10e9f",
+      "record_count": 3,
+      "stop_count": 0,
+      "paths": [["AAA"], ["AAA"], ["TGG"]]
+    },
+    "consecutive_calls": {
+      "seed": 2718,
+      "generations": 2,
+      "start_weights": {"AAA": 2, "TGG": 2},
+      "first_result_digest": "8b0867d466097ec06180bcf3233c5aacc0051bc80bb2b0f21b434892f52433f6",
+      "first_state_digest": "76ce39b0e92d1bae58810b17efaf68c69ece6506bfb3c03bba685c36ae004ede",
+      "second_result_digest": "57a94afe7cecd2644921026b10454dfa17a7b6531cfe87388d8e20c9b51c45ea",
+      "second_state_digest": "229f6ef982a97a66dbeae7b254cbe86338579e80f1c8c0501995f080fbe661d9",
+      "first_paths": [
+        ["AAA", "CAA", "CCA"], ["AAA", "TAA"],
+        ["TGG", "CGG", "TGG"], ["TGG", "TAG"]
+      ],
+      "second_paths": [
+        ["AAA", "TAA"], ["AAA", "CAA", "CAG"],
+        ["TGG", "TGT", "AGT"], ["TGG", "AGG", "CGG"]
+      ]
+    }
+  },
+  "cache_contract": {
+    "arguments": [1, 1, 0.2, 0.5, 0.3, 7],
+    "result_digest": "d2aa59e39bc2dd846cec59227df67cc410d959b30a96d0a90210bedef96ab3f4",
+    "before_miss_digest": "ee583fc7cab6cc9e26a417055e34d282244d7af320e55000c92a146ae6e3b2cf",
+    "after_miss_digest": "ed16aa8be585d8ff4aec50e054fc3629c8decfee18d308b181266197c3d842d8",
+    "before_hit_digest": "491d0f2b8894af9c1f0aca826386f492f15d15bde10717cca48a61c7e1fd8125",
+    "after_hit_digest": "491d0f2b8894af9c1f0aca826386f492f15d15bde10717cca48a61c7e1fd8125",
+    "miss_changes_rng": true,
+    "hit_preserves_rng": true
+  }
+}

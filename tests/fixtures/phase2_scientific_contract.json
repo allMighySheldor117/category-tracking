@@ -1,0 +1,138 @@
+{
+  "schema_version": 2,
+  "contract_version": "2.1-approved",
+  "generated_by_tests": false,
+  "authority": "final code/docs/phase_2_scientific_contract.md",
+  "aliases": {
+    "StartWeights": "Mapping[str, float]",
+    "StartScope": ["population", "codon", "amino_acid", "trait"],
+    "ConvergenceBasis": ["category_weight", "survivor_fraction"],
+    "MetricName": [
+      "category_live_value",
+      "category_fraction",
+      "survivor_fraction",
+      "stop_fraction",
+      "new_stop_value",
+      "cumulative_stop_value",
+      "cumulative_stop_fraction",
+      "codon_live_value",
+      "codon_new_stop_value",
+      "codon_cumulative_stop_value"
+    ]
+  },
+  "errors": {
+    "ExactResultProvenanceError": "ValueError",
+    "InvalidScientificScopeError": "ValueError",
+    "UnsupportedComparisonError": "ValueError",
+    "MetricSchemaError": "ValueError",
+    "ScientificInvariantError": "ValueError"
+  },
+  "models": {
+    "ExactAnalysisResult": [
+      "simulation",
+      "start_weights",
+      "population_category_metrics",
+      "population_survivor_fractions",
+      "population_survival",
+      "population_stop_outcomes"
+    ],
+    "AggregatedGenerationCounts": [
+      "generation",
+      "live_codon",
+      "live_amino_acid",
+      "live_category",
+      "live_by_start_codon",
+      "live_by_start_trait",
+      "current_codon_by_start_codon",
+      "new_stop_codon_by_start_codon",
+      "new_stops_by_stop_codon",
+      "new_stops_by_start_codon",
+      "new_stops_by_start_trait",
+      "total_live",
+      "new_stops",
+      "cumulative_stops"
+    ],
+    "AggregatedSampledResult": [
+      "seed",
+      "n_generations",
+      "start_counts",
+      "total_start_count",
+      "generations",
+      "final_live_codon",
+      "final_live_amino_acid",
+      "final_live_by_start_codon",
+      "total_stopped"
+    ],
+    "ComparisonResult": ["metric", "baseline_label", "candidate_label", "key_columns", "table"],
+    "ConvergenceComparisonResult": ["baseline_label", "candidate_label", "table"],
+    "ExactSampledComparisonResult": ["metric", "denominator_scope", "familywise_alpha", "family_size", "table"],
+    "ScientificInvariantReport": ["metric", "scope", "generation", "expected", "observed", "tolerance"]
+  },
+  "tables": {
+    "category_metrics": {
+      "columns": ["generation", "start_scope", "start_key", "category", "live_value", "value_kind"],
+      "exact_dtypes": ["int64", "object", "object", "object", "float64", "object"],
+      "aggregated_dtypes": ["int64", "object", "object", "object", "int64", "object"]
+    },
+    "survivor_fractions": {
+      "columns": ["generation", "start_scope", "start_key", "category", "numerator", "denominator", "fraction"],
+      "exact_dtypes": ["int64", "object", "object", "object", "float64", "float64", "float64"],
+      "aggregated_dtypes": ["int64", "object", "object", "object", "int64", "int64", "float64"]
+    },
+    "survival_by_start": {
+      "columns": ["generation", "start_scope", "start_key", "initial_value", "live_value", "stopped_value", "survivor_fraction", "stop_fraction", "value_kind"],
+      "exact_dtypes": ["int64", "object", "object", "float64", "float64", "float64", "float64", "float64", "object"],
+      "aggregated_dtypes": ["int64", "object", "object", "int64", "int64", "int64", "float64", "float64", "object"]
+    },
+    "stop_outcomes": {
+      "columns": ["generation", "start_scope", "start_key", "stop_codon", "new_stop_value", "cumulative_stop_value", "initial_value", "cumulative_stop_fraction", "value_kind"],
+      "exact_dtypes": ["int64", "object", "object", "object", "float64", "float64", "float64", "float64", "object"],
+      "aggregated_dtypes": ["int64", "object", "object", "object", "int64", "int64", "int64", "float64", "object"]
+    },
+    "codon_outcomes": {
+      "columns": ["generation", "start_codon", "target_codon", "target_aa", "target_category", "live_value", "new_stop_value", "cumulative_stop_value", "value_kind"],
+      "exact_dtypes": ["int64", "object", "object", "object", "object", "float64", "float64", "float64", "object"],
+      "aggregated_dtypes": ["int64", "object", "object", "object", "object", "int64", "int64", "int64", "object"]
+    },
+    "convergence": {
+      "columns": ["start_scope", "start_key", "basis", "tolerance", "generation", "max_delta", "status"],
+      "dtypes": ["object", "object", "object", "float64", "Int64", "float64", "object"]
+    },
+    "directed_numeric_comparison": {
+      "columns": ["generation", "metric", "entity", "baseline_label", "candidate_label", "baseline_value", "candidate_value", "signed_delta", "absolute_delta", "relative_delta", "direction"],
+      "dtypes": ["Int64", "object", "object", "object", "object", "float64", "float64", "float64", "float64", "Float64", "object"]
+    },
+    "convergence_comparison": {
+      "columns": ["start_scope", "start_key", "basis", "baseline_label", "candidate_label", "baseline_generation", "candidate_generation", "generation_delta", "baseline_status", "candidate_status"],
+      "dtypes": ["object", "object", "object", "object", "object", "Int64", "Int64", "Int64", "object", "object"]
+    },
+    "exact_sampled_calibration": {
+      "columns": ["generation", "metric", "entity", "denominator_scope", "exact_fraction", "sampled_fraction", "signed_error", "absolute_error", "sample_size", "standard_error", "adjusted_alpha", "family_size", "confidence_lower", "confidence_upper", "within_interval"],
+      "dtypes": ["int64", "object", "object", "object", "float64", "Float64", "Float64", "Float64", "int64", "Float64", "float64", "int64", "Float64", "Float64", "boolean"]
+    }
+  },
+  "canonical": {
+    "scopes": ["population", "codon", "amino_acid", "trait"],
+    "stops": ["TAA", "TAG", "TGA"],
+    "value_kinds": ["probability_weight", "copy_count"],
+    "index": "RangeIndex(start=0, step=1)",
+    "generation": "1..n_generations"
+  },
+  "approved_decisions": {
+    "aggregated_seed": "required local random.Random(seed)",
+    "aggregated_iteration": "copy-major streaming",
+    "aggregated_ui": "engine-only",
+    "exact_materialization": "eager population core plus named scoped queries",
+    "zero_baseline_relative_delta": "pd.NA",
+    "stop_outcomes": "new and cumulative",
+    "fixture_policy": "one reviewed static fixture",
+    "exact_conservation": {"rel_tol": 1e-12, "abs_tol": 1e-12}
+  },
+  "calibration": {
+    "familywise_alpha": 0.01,
+    "seeds": [1729, 271828, 314159],
+    "sample_sizes": [610, 6100, 61000],
+    "generations": 10,
+    "interval": "two-sided Wilson with Bonferroni family adjustment"
+  }
+}

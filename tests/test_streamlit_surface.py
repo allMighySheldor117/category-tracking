@@ -1,0 +1,186 @@
+"""Frozen Streamlit, accessibility, query-binding, and cache contracts.
+
+The fixture is reviewed static data. This module reads it but never generates
+or updates it.
+"""
+
+from __future__ import annotations
+
+import json
+import random
+import tomllib
+import unittest
+from pathlib import Path
+from typing import Any
+
+from streamlit.testing.v1 import AppTest
+
+import category_tracking as legacy
+import category_tracking_web as web
+from tests.test_baseline_behavior import structural_digest
+
+
+APP_DIR = Path(__file__).parents[1]
+APP_FILE = APP_DIR / "category_tracking_web.py"
+FIXTURE_PATH = Path(__file__).parent / "fixtures" / "phase1_streamlit_surface.json"
+SCIENTIFIC_FIXTURE_PATH = Path(__file__).parent / "fixtures" / "phase1_scientific_baseline.json"
+
+
+def widget_contract(widget: Any, fields: tuple[str, ...]) -> dict[str, Any]:
+    return {field: getattr(widget, field) for field in fields}
+
+
+def chart_contract(app: AppTest) -> list[dict[str, Any]]:
+    charts = []
+    for element in app.get("plotly_chart"):
+        spec = json.loads(element.proto.spec)
+        charts.append(
+            {
+                "title": spec.get("layout", {}).get("title", {}).get("text"),
+                "trace_names": [trace.get("name") for trace in spec.get("data", [])],
+            }
+        )
+    return charts
+
+
+class StreamlitSurfaceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+        cls.scientific_fixture = json.loads(
+            SCIENTIFIC_FIXTURE_PATH.read_text(encoding="utf-8")
+        )
+        cls.default_app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+
+    def test_default_widget_and_presentation_surface(self) -> None:
+        app = self.default_app
+        page = self.fixture["page"]
+        self.assertEqual([item.value for item in app.title], [page["title"]])
+        self.assertEqual(app.caption[0].value, page["caption"])
+        self.assertEqual([item.value for item in app.header], [page["header"]])
+        self.assertEqual(len(app.exception), page["default_exception_count"])
+        self.assertEqual(len(app.error), page["default_error_count"])
+        self.assertEqual(len(app.get("plotly_chart")), page["default_plotly_count"])
+        self.assertEqual(len(app.dataframe), page["default_dataframe_count"])
+        self.assertEqual(list(app.dataframe[0].value.shape), page["default_dataframe_shape"])
+        self.assertEqual(
+            list(app.dataframe[0].value.columns),
+            page["default_dataframe_columns"],
+        )
+
+        segmented = [
+            widget_contract(item, ("type", "label", "key", "value", "options"))
+            for item in app.segmented_control
+        ]
+        self.assertEqual(segmented, self.fixture["segmented_controls"])
+
+        number_inputs = [
+            widget_contract(item, ("label", "value", "min", "max", "step"))
+            for item in app.number_input
+        ]
+        self.assertEqual(number_inputs, self.fixture["number_inputs"])
+
+        text_inputs = [
+            widget_contract(item, ("label", "key", "value", "placeholder"))
+            for item in app.text_input
+        ]
+        self.assertEqual(text_inputs, self.fixture["text_inputs"])
+
+        self.assertEqual(len(app.selectbox), len(self.fixture["selectboxes"]))
+        expected_options = [web.codon_label(codon) for codon in legacy.VALID_CODONS]
+        for widget, expected in zip(app.selectbox, self.fixture["selectboxes"]):
+            observed = {
+                "label": widget.label,
+                "key": widget.key,
+                "value": widget.value,
+                "option_count": len(widget.options),
+                "first_option": widget.options[0],
+                "last_option": widget.options[-1],
+            }
+            self.assertEqual(observed, expected)
+            self.assertEqual(list(widget.options), expected_options)
+
+        self.assertEqual(len(app.slider), 1)
+        self.assertEqual(
+            widget_contract(app.slider[0], ("label", "value", "min", "max", "step")),
+            self.fixture["slider"],
+        )
+        self.assertEqual(chart_contract(app), self.fixture["default_charts"])
+
+    def test_whole_population_surface(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.segmented_control[0].set_value("Whole population")
+        app.run(timeout=120)
+        expected = self.fixture["whole_population"]
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.get("plotly_chart")), expected["plotly_count"])
+        self.assertEqual(len(app.dataframe), expected["dataframe_count"])
+        self.assertEqual([item.value for item in app.subheader], expected["subheaders"])
+        trait_widget = app.selectbox[0]
+        self.assertEqual(
+            widget_contract(trait_widget, ("label", "key", "value", "options")),
+            expected["trait_selectbox"],
+        )
+        self.assertEqual(chart_contract(app), expected["charts"])
+
+    def test_query_parameter_bindings(self) -> None:
+        expected = self.fixture["query_binding"]
+        app = AppTest.from_file(str(APP_FILE))
+        for key, value in expected["injected"].items():
+            app.query_params[key] = value
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+        self.assertEqual(dict(app.query_params), expected["retained_query_params"])
+        self.assertEqual(
+            [item.value for item in app.segmented_control],
+            expected["segmented_values"],
+        )
+        self.assertEqual([item.value for item in app.selectbox], expected["selectbox_values"])
+
+    def test_invalid_probability_message(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.text_input[0].set_value("abc")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+        self.assertEqual(
+            [item.value for item in app.error],
+            [self.fixture["invalid_probability_error"]],
+        )
+
+    def test_accessibility_and_theme_contract(self) -> None:
+        source = APP_FILE.read_text(encoding="utf-8")
+        for snippet in self.fixture["accessibility_source_contract"]:
+            with self.subTest(snippet=snippet):
+                self.assertIn(snippet, source)
+        with (APP_DIR / ".streamlit" / "config.toml").open("rb") as stream:
+            theme = tomllib.load(stream)["theme"]
+        for key, expected in self.fixture["theme"].items():
+            with self.subTest(theme_key=key):
+                self.assertEqual(theme[key], expected)
+
+    def test_run_cached_hit_miss_and_rng_contract(self) -> None:
+        expected = self.scientific_fixture["cache_contract"]
+        web.run_cached.clear()
+
+        random.seed(12345)
+        before_miss = random.getstate()
+        first = web.run_cached(*expected["arguments"])
+        after_miss = random.getstate()
+
+        random.seed(54321)
+        before_hit = random.getstate()
+        second = web.run_cached(*expected["arguments"])
+        after_hit = random.getstate()
+
+        self.assertEqual(first, second)
+        self.assertEqual(structural_digest(first), expected["result_digest"])
+        self.assertEqual(structural_digest(before_miss), expected["before_miss_digest"])
+        self.assertEqual(structural_digest(after_miss), expected["after_miss_digest"])
+        self.assertEqual(structural_digest(before_hit), expected["before_hit_digest"])
+        self.assertEqual(structural_digest(after_hit), expected["after_hit_digest"])
+        self.assertEqual(before_miss != after_miss, expected["miss_changes_rng"])
+        self.assertEqual(before_hit == after_hit, expected["hit_preserves_rng"])
+
+
+if __name__ == "__main__":
+    unittest.main()
