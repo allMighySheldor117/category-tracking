@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from api.jobs import JobRunner, JobStatus, JobStore
 from engine.aggregated_tracking import run_aggregated_experiment
 from engine.category_analysis import get_aggregated_category_metrics, get_aggregated_survivor_fractions
 from engine.comparisons import compare_exact_to_sampled, compare_numeric_metric
@@ -102,6 +103,13 @@ def _validation_error(message: str) -> JSONResponse:
     return JSONResponse(
         status_code=422,
         content=error_envelope(code="validation_error", message=message, status_code=422),
+    )
+
+
+def _job_error(code: str, message: str, status_code: int) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content=error_envelope(code=code, message=message, status_code=status_code),
     )
 
 
@@ -225,6 +233,9 @@ def _aggregated_metric_table(result: Any, *, metric: str, scope: dict[str, Any])
 def create_app() -> FastAPI:
     """Create the Codon Category Tracking API application."""
 
+    job_store = JobStore()
+    job_runner = JobRunner(job_store)
+
     service = FastAPI(
         title="Codon Category Tracking API",
         version=API_VERSION,
@@ -234,6 +245,7 @@ def create_app() -> FastAPI:
             {"name": "metadata", "description": "Engine metadata and supported options."},
             {"name": "simulations", "description": "Exact and aggregated sampled simulations."},
             {"name": "comparisons", "description": "Exact and sampled comparison outputs."},
+            {"name": "jobs", "description": "In-process asynchronous simulation jobs."},
         ],
     )
 
@@ -559,6 +571,176 @@ def create_app() -> FastAPI:
                 "family_size": comparison.family_size,
                 "table": serialize_table(comparison.table, value_kind="calibration"),
             },
+        )
+
+    def _accepted_job_payload(job: Any) -> dict[str, Any]:
+        return success_envelope(
+            mode="job_accepted",
+            scientific_authority=job.scientific_authority,
+            data={
+                "job": job.to_metadata(),
+                "links": {
+                    "status": f"/api/v1/jobs/{job.job_id}",
+                    "result": f"/api/v1/jobs/{job.job_id}/result",
+                },
+            },
+        )
+
+    def _create_and_run_job(
+        *,
+        job_type: str,
+        scientific_authority: str,
+        request: dict[str, Any],
+        work: Any,
+    ) -> dict[str, Any]:
+        job = job_store.create_job(
+            job_type=job_type,
+            scientific_authority=scientific_authority,
+            request_payload=request,
+            work=work,
+        )
+        job_runner.start_available()
+        return _accepted_job_payload(job)
+
+    @service.post("/api/v1/jobs/exact", tags=["jobs"], status_code=202, response_model=None)
+    def create_exact_job(request: dict[str, Any]) -> dict[str, Any] | JSONResponse:
+        oversized = _exact_oversized_response(request)
+        if oversized is not None:
+            return oversized
+        _n_generations(request)
+        _probabilities(request)
+        _starting_weights(request)
+        return _create_and_run_job(
+            job_type="exact",
+            scientific_authority="exact_probability",
+            request=request,
+            work=lambda: exact_simulation(request),
+        )
+
+    @service.post("/api/v1/jobs/aggregated", tags=["jobs"], status_code=202, response_model=None)
+    def create_aggregated_job(request: dict[str, Any]) -> dict[str, Any] | JSONResponse:
+        if "seed" not in request or not isinstance(request["seed"], int):
+            return _validation_error("aggregated sampled requests require an integer seed")
+        oversized = _aggregated_oversized_response(request)
+        if oversized is not None:
+            return oversized
+        _n_generations(request)
+        _probabilities(request)
+        _starting_weights(request)
+        return _create_and_run_job(
+            job_type="aggregated",
+            scientific_authority="experimental_sampled",
+            request=request,
+            work=lambda: aggregated_simulation(request),
+        )
+
+    @service.post(
+        "/api/v1/jobs/comparisons/exact",
+        tags=["jobs"],
+        status_code=202,
+        response_model=None,
+    )
+    def create_exact_comparison_job(request: dict[str, Any]) -> dict[str, Any] | JSONResponse:
+        baseline_oversized = _exact_oversized_response(request["baseline"]["simulation"])
+        if baseline_oversized is not None:
+            return baseline_oversized
+        candidate_oversized = _exact_oversized_response(request["candidate"]["simulation"])
+        if candidate_oversized is not None:
+            return candidate_oversized
+        return _create_and_run_job(
+            job_type="exact_comparison",
+            scientific_authority="exact_probability",
+            request=request,
+            work=lambda: exact_comparison(request),
+        )
+
+    @service.post(
+        "/api/v1/jobs/comparisons/exact-vs-sampled",
+        tags=["jobs"],
+        status_code=202,
+        response_model=None,
+    )
+    def create_exact_vs_sampled_job(request: dict[str, Any]) -> dict[str, Any] | JSONResponse:
+        exact_oversized = _exact_oversized_response(request["exact"])
+        if exact_oversized is not None:
+            return exact_oversized
+        sampled_oversized = _aggregated_oversized_response(request["sampled"])
+        if sampled_oversized is not None:
+            return sampled_oversized
+        if "seed" not in request["sampled"] or not isinstance(request["sampled"]["seed"], int):
+            return _validation_error("aggregated sampled requests require an integer seed")
+        return _create_and_run_job(
+            job_type="exact_vs_sampled",
+            scientific_authority="exact_probability",
+            request=request,
+            work=lambda: exact_vs_sampled_comparison(request),
+        )
+
+    @service.get("/api/v1/jobs/{job_id}", tags=["jobs"], response_model=None)
+    def get_job_status(job_id: str) -> dict[str, Any] | JSONResponse:
+        job_store.cleanup()
+        job = job_store.get_job(job_id)
+        if job is None:
+            return _job_error("job_not_found", "Job not found.", 404)
+        return success_envelope(
+            mode="job_status",
+            scientific_authority="none",
+            data={"job": job.to_metadata()},
+        )
+
+    @service.get("/api/v1/jobs/{job_id}/result", tags=["jobs"], response_model=None)
+    def get_job_result(job_id: str) -> dict[str, Any] | JSONResponse:
+        job_store.cleanup()
+        job = job_store.get_job(job_id)
+        if job is None:
+            return _job_error("job_not_found", "Job not found.", 404)
+        if job.status in {JobStatus.QUEUED, JobStatus.RUNNING, JobStatus.CANCEL_REQUESTED}:
+            return _job_error("job_result_not_ready", "Job result is not ready.", 409)
+        if job.status == JobStatus.CANCELLED:
+            return _job_error("job_cancelled", "Job was cancelled.", 409)
+        if job.status == JobStatus.FAILED:
+            return _job_error("internal_job_error", "Job failed unexpectedly.", 500)
+        if job.status == JobStatus.EXPIRED:
+            return _job_error("job_expired", "Job has expired.", 410)
+        return success_envelope(
+            mode="job_result",
+            scientific_authority=job.scientific_authority,
+            data={"job": job.to_metadata(), "result": job.result},
+        )
+
+    @service.post("/api/v1/jobs/{job_id}/retry", tags=["jobs"], status_code=202, response_model=None)
+    def retry_job(job_id: str) -> dict[str, Any] | JSONResponse:
+        try:
+            job = job_store.retry(job_id)
+        except KeyError:
+            return _job_error("job_not_found", "Job not found.", 404)
+        except RuntimeError as exc:
+            if str(exc) == "Job queue is full":
+                return _job_error("queue_full", "Job queue is full. Try again later.", 503)
+            return _job_error("job_retry_not_allowed", "Job cannot be retried.", 409)
+        job_runner.start_available()
+        return _accepted_job_payload(job)
+
+    @service.delete("/api/v1/jobs/{job_id}", tags=["jobs"], response_model=None)
+    def delete_job(job_id: str) -> dict[str, Any] | JSONResponse:
+        job = job_store.get_job(job_id)
+        if job is None:
+            return _job_error("job_not_found", "Job not found.", 404)
+        if job.status == JobStatus.RUNNING:
+            job = job_store.request_cancel(job_id)
+            return JSONResponse(
+                status_code=202,
+                content=success_envelope(
+                    mode="job_status",
+                    scientific_authority="none",
+                    data={"job": job.to_metadata()},
+                ),
+            )
+        removed = job_store.remove(job_id)
+        return success_envelope(
+            mode="job_status",
+            scientific_authority="none",
+            data={"job": removed.to_metadata()},
         )
 
     return service

@@ -48,6 +48,13 @@ class ApiBoundaryTests(unittest.TestCase):
                 "/api/v1/simulations/aggregated",
                 "/api/v1/comparisons/exact",
                 "/api/v1/comparisons/exact-vs-sampled",
+                "/api/v1/jobs/exact",
+                "/api/v1/jobs/aggregated",
+                "/api/v1/jobs/comparisons/exact",
+                "/api/v1/jobs/comparisons/exact-vs-sampled",
+                "/api/v1/jobs/{job_id}",
+                "/api/v1/jobs/{job_id}/result",
+                "/api/v1/jobs/{job_id}/retry",
             },
         )
 

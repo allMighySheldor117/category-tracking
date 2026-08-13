@@ -1,0 +1,28 @@
+{
+  "info": {
+    "title": "Codon Category Tracking API",
+    "version": "phase4-api-v1"
+  },
+  "tags": [
+    "health",
+    "metadata",
+    "simulations",
+    "comparisons",
+    "jobs"
+  ],
+  "paths": {
+    "/health": ["get"],
+    "/api/v1/metadata": ["get"],
+    "/api/v1/simulations/exact": ["post"],
+    "/api/v1/simulations/aggregated": ["post"],
+    "/api/v1/comparisons/exact": ["post"],
+    "/api/v1/comparisons/exact-vs-sampled": ["post"],
+    "/api/v1/jobs/exact": ["post"],
+    "/api/v1/jobs/aggregated": ["post"],
+    "/api/v1/jobs/comparisons/exact": ["post"],
+    "/api/v1/jobs/comparisons/exact-vs-sampled": ["post"],
+    "/api/v1/jobs/{job_id}": ["delete", "get"],
+    "/api/v1/jobs/{job_id}/result": ["get"],
+    "/api/v1/jobs/{job_id}/retry": ["post"]
+  }
+}

@@ -100,10 +100,17 @@ class ApiErrorContractTests(unittest.TestCase):
                 "/api/v1/simulations/aggregated",
                 "/api/v1/comparisons/exact",
                 "/api/v1/comparisons/exact-vs-sampled",
+                "/api/v1/jobs/exact",
+                "/api/v1/jobs/aggregated",
+                "/api/v1/jobs/comparisons/exact",
+                "/api/v1/jobs/comparisons/exact-vs-sampled",
+                "/api/v1/jobs/{job_id}",
+                "/api/v1/jobs/{job_id}/result",
+                "/api/v1/jobs/{job_id}/retry",
             },
         )
         tag_names = {tag["name"] for tag in schema["tags"]}
-        self.assertTrue({"health", "metadata", "simulations", "comparisons"}.issubset(tag_names))
+        self.assertTrue({"health", "metadata", "simulations", "comparisons", "jobs"}.issubset(tag_names))
 
 if __name__ == "__main__":
     unittest.main()
