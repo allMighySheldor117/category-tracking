@@ -139,6 +139,56 @@ STYLE_HTML = f"""
         font-size: .85rem;
         overflow-wrap: anywhere;
     }}
+    .phase7-product-hero {{
+        display: grid;
+        grid-template-columns: repeat(3, minmax(8rem, 1fr));
+        gap: .75rem;
+        align-items: stretch;
+        margin: .75rem 0 1rem 0;
+    }}
+    .phase7-product-hero > div,
+    .phase7-sidebar-guide,
+    .phase7-result-context,
+    .phase7-chart-shell,
+    .phase7-table-context {{
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .84);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .055);
+    }}
+    .phase7-product-hero > div {{
+        padding: .85rem .95rem;
+    }}
+    .phase7-product-hero strong {{
+        display: block;
+        color: var(--ink);
+        font-size: .94rem;
+        line-height: 1.15;
+    }}
+    .phase7-product-hero span {{
+        display: block;
+        color: var(--muted);
+        font-size: .78rem;
+        line-height: 1.35;
+        margin-top: .25rem;
+    }}
+    .phase7-product-hero .phase7-kicker {{
+        color: var(--accent);
+        font-size: .72rem;
+        font-weight: 750;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }}
+    .phase7-product-hero .phase7-summary {{
+        background:
+            linear-gradient(135deg, rgba(15, 118, 110, .12), rgba(109, 40, 217, .10)),
+            var(--panel);
+    }}
+    @media (max-width: 900px) {{
+        .phase7-product-hero {{
+            grid-template-columns: 1fr;
+        }}
+    }}
     code {{
         color: var(--ink);
         background: #E5E7EB;
@@ -276,6 +326,28 @@ def configure_page():
         layout="wide",
     )
     st.html(STYLE_HTML)
+
+
+def render_product_hero() -> None:
+    """Render visual hierarchy only; no scientific values are calculated here."""
+    st.html(
+        """
+        <section class="phase7-product-hero" aria-label="Analysis workflow summary">
+            <div class="phase7-summary">
+                <strong>Configure</strong>
+                <span>Mutation probabilities, sample size, seed, and view mode stay together.</span>
+            </div>
+            <div>
+                <strong>Run</strong>
+                <span>The app computes both user and preset paths for honest comparison.</span>
+            </div>
+            <div>
+                <strong>Inspect</strong>
+                <span>Fullscreen controls keep chart sections readable without changing the data.</span>
+            </div>
+        </section>
+        """
+    )
 
 
 def parse_prob(value: str) -> float:
@@ -1701,6 +1773,7 @@ def main():
         </div>
         """,
     )
+    render_product_hero()
     dashboard_view = st.segmented_control(
         "Workspace",
         ["Codon focus", "Whole population"],
@@ -1713,6 +1786,7 @@ def main():
 
     with st.sidebar:
         st.header("Simulation")
+        st.caption("Configure once in the sidebar; the visible workspace updates together.")
         n_gen = st.number_input("Generations", min_value=1, max_value=2000, value=20, step=1)
         copies = st.number_input(
             "Copies per codon",
@@ -1836,6 +1910,8 @@ def main():
     sim = user_sim if view_mode == "Your probability" else preset_sim
     exp = user_exp if view_mode == "Your probability" else preset_exp
     run_label = "User probability" if view_mode == "Your probability" else "Preset probability"
+
+    st.caption("Charts and tables below preserve the accepted Phase 6 data display.")
 
     if dashboard_view == "Whole population":
         render_whole_population_view(

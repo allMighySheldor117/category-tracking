@@ -277,6 +277,31 @@ class StreamlitSurfaceTests(unittest.TestCase):
             with self.subTest(theme_key=key):
                 self.assertEqual(theme[key], expected)
 
+    def test_phase7_visual_contract_polish_markers(self) -> None:
+        source = APP_FILE.read_text(encoding="utf-8")
+        for snippet in (
+            "phase7-product-hero",
+            "phase7-sidebar-guide",
+            "phase7-result-context",
+            "phase7-chart-shell",
+            "phase7-table-context",
+        ):
+            with self.subTest(snippet=snippet):
+                self.assertIn(snippet, source)
+
+        app = self.default_app
+        captions = [item.value for item in app.caption]
+        self.assertIn(
+            "Configure once in the sidebar; the visible workspace updates together.",
+            captions,
+        )
+        self.assertIn(
+            "Charts and tables below preserve the accepted Phase 6 data display.",
+            captions,
+        )
+        page_text = "\n".join(item.value for item in app.text)
+        self.assertNotIn("STREAMLIT PRODUCT WORKSPACE", page_text)
+
     def test_run_cached_hit_miss_and_rng_contract(self) -> None:
         expected = self.scientific_fixture["cache_contract"]
         web.run_cached.clear()
