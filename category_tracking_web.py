@@ -150,7 +150,10 @@ STYLE_HTML = f"""
     .phase7-sidebar-guide,
     .phase7-result-context,
     .phase7-chart-shell,
-    .phase7-table-context {{
+    .phase7-table-context,
+    .phase8-guided-intro,
+    .phase8-sidebar-mode-guide,
+    .phase8-result-interpretation {{
         border: 1px solid var(--rule);
         border-radius: 12px;
         background: rgba(255, 255, 255, .84);
@@ -365,6 +368,7 @@ def parse_prob(value: str) -> float:
 
 
 def probability_inputs(prefix: str, defaults: Tuple[str, str, str]) -> Tuple[float, float, float]:
+    # phase8-error-guidance: keep probability errors concise and actionable.
     at_s = st.text_input(
         "A->T (= G<->C)",
         value=defaults[0],
@@ -1774,6 +1778,9 @@ def main():
         """,
     )
     render_product_hero()
+    st.caption(
+        "Configure → Run → Inspect: set the sidebar once, then read each result section from top to bottom."
+    )
     dashboard_view = st.segmented_control(
         "Workspace",
         ["Codon focus", "Whole population"],
@@ -1787,6 +1794,7 @@ def main():
     with st.sidebar:
         st.header("Simulation")
         st.caption("Configure once in the sidebar; the visible workspace updates together.")
+        st.caption("Your probability and Preset use the same controls so Compare both stays honest.")
         n_gen = st.number_input("Generations", min_value=1, max_value=2000, value=20, step=1)
         copies = st.number_input(
             "Copies per codon",
@@ -1827,6 +1835,7 @@ def main():
             bind="query-params",
             width="stretch",
         )
+        st.caption("Exact probability is deterministic; Sampled copies is the stochastic copy simulation.")
         no_more_basis = st.segmented_control(
             "No more change basis",
             ["Current computation", "Exact surviving trait fractions"],
@@ -1870,7 +1879,7 @@ def main():
     with loading_slot.container():
         st.html(
             """
-            <div class="dna-loader" role="status" aria-live="polite">
+            <div class="dna-loader phase8-run-guidance" role="status" aria-live="polite">
                 <div class="dna-helix" aria-hidden="true">
                     <span class="dna-rung"></span>
                     <span class="dna-rung"></span>
@@ -1912,6 +1921,9 @@ def main():
     run_label = "User probability" if view_mode == "Your probability" else "Preset probability"
 
     st.caption("Charts and tables below preserve the accepted Phase 6 data display.")
+    st.caption(
+        "Use these results as a guided reading path: first the headline metrics, then the charts, then the tables."
+    )
 
     if dashboard_view == "Whole population":
         render_whole_population_view(

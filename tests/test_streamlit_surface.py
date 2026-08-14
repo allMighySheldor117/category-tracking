@@ -302,6 +302,29 @@ class StreamlitSurfaceTests(unittest.TestCase):
         page_text = "\n".join(item.value for item in app.text)
         self.assertNotIn("STREAMLIT PRODUCT WORKSPACE", page_text)
 
+    def test_phase8_guided_ux_contract_markers(self) -> None:
+        source = APP_FILE.read_text(encoding="utf-8")
+        for snippet in (
+            "phase8-guided-intro",
+            "phase8-sidebar-mode-guide",
+            "phase8-run-guidance",
+            "phase8-result-interpretation",
+            "phase8-error-guidance",
+        ):
+            with self.subTest(snippet=snippet):
+                self.assertIn(snippet, source)
+
+        app = self.default_app
+        captions = [item.value for item in app.caption]
+        for expected in (
+            "Configure → Run → Inspect: set the sidebar once, then read each result section from top to bottom.",
+            "Your probability and Preset use the same controls so Compare both stays honest.",
+            "Exact probability is deterministic; Sampled copies is the stochastic copy simulation.",
+            "Use these results as a guided reading path: first the headline metrics, then the charts, then the tables.",
+        ):
+            with self.subTest(caption=expected):
+                self.assertIn(expected, captions)
+
     def test_run_cached_hit_miss_and_rng_contract(self) -> None:
         expected = self.scientific_fixture["cache_contract"]
         web.run_cached.clear()
