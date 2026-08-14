@@ -8,6 +8,7 @@ Run:
 from __future__ import annotations
 
 import random
+import time
 from typing import Iterable, Tuple
 
 import pandas as pd
@@ -869,10 +870,122 @@ def all_codon_no_more_change(records: Iterable[dict], track_data: dict,
     )
 
 
+def no_more_change_chart(nm_df: pd.DataFrame) -> go.Figure | None:
+    bar_df = nm_df[nm_df["no_more_change"].str.isnumeric()].copy()
+    if bar_df.empty:
+        return None
+    bar_df["generation"] = bar_df["no_more_change"].astype(int)
+    fig = px.bar(
+        bar_df.sort_values("generation"),
+        x="codon",
+        y="generation",
+        color="start_category",
+        color_discrete_map=CAT_COLORS,
+        hover_data=["aa", "status"],
+        title="First generation where live category counts stop changing",
+    )
+    fig.update_layout(
+        height=520,
+        margin=dict(l=58, r=24, t=70, b=130),
+        paper_bgcolor=PANEL_BG,
+        plot_bgcolor=PANEL_BG,
+        font=dict(color=INK, size=13),
+        title=dict(
+            text="No more category change by starting codon",
+            font=dict(size=16, color=INK),
+            x=0.02,
+            xanchor="left",
+        ),
+        legend=dict(
+            orientation="h",
+            y=-0.28,
+            x=0,
+            xanchor="left",
+            font=dict(size=12, color=INK),
+        ),
+    )
+    fig.update_xaxes(tickangle=-45, automargin=True)
+    fig.update_yaxes(
+        title="Generation",
+        gridcolor="#E5E7EB",
+        automargin=True,
+        rangemode="tozero",
+    )
+    return fig
+
+
+def render_no_more_change_panel(label: str, nm_df: pd.DataFrame,
+                                panel_key: str) -> go.Figure | None:
+    st.subheader(label)
+    fig = no_more_change_chart(nm_df)
+    if fig is not None:
+        st.plotly_chart(
+            fig,
+            width="stretch",
+            key=f"{panel_key}_no_more_change_chart",
+        )
+    st.dataframe(
+        nm_df,
+        width="stretch",
+        hide_index=True,
+        key=f"{panel_key}_no_more_change_table",
+        column_config={
+            "codon": st.column_config.TextColumn("Codon", pinned=True),
+            "aa": st.column_config.TextColumn("AA"),
+            "start_category": st.column_config.TextColumn("Start category"),
+            "no_more_change": st.column_config.TextColumn("No more change"),
+            "status": st.column_config.TextColumn("Status"),
+        },
+    )
+    return fig
+
+
+@st.dialog("No more category change", width="large", icon=":material/fullscreen:")
+def fullscreen_no_more_change_comparison(user_sim: ExactSimulationResult,
+                                         user_exp: SampledSimulationResult,
+                                         preset_sim: ExactSimulationResult,
+                                         preset_exp: SampledSimulationResult,
+                                         n_gen: int, display_mode: str,
+                                         no_more_basis: str,
+                                         no_more_alpha: float):
+    st.subheader("No more category change")
+    st.caption("Press Esc or use the close button to return to the dashboard.")
+    left, right = st.columns(2)
+    with left:
+        user_nm_df = all_codon_no_more_change(
+            user_exp.records,
+            user_sim.track_data,
+            n_gen,
+            display_mode,
+            no_more_basis,
+            no_more_alpha,
+        )
+        render_no_more_change_panel(
+            "User probability",
+            user_nm_df,
+            "fullscreen_user",
+        )
+    with right:
+        preset_nm_df = all_codon_no_more_change(
+            preset_exp.records,
+            preset_sim.track_data,
+            n_gen,
+            display_mode,
+            no_more_basis,
+            no_more_alpha,
+        )
+        render_no_more_change_panel(
+            "Preset probability",
+            preset_nm_df,
+            "fullscreen_preset",
+        )
+
+
 def render_all_codon_population_panel(label: str, sim: ExactSimulationResult,
                                       exp: SampledSimulationResult,
                                       n_gen: int, display_mode: str,
-                                      panel_key: str):
+                                      panel_key: str,
+                                      show_fullscreen: bool = True):
     records = exp.records
     track_data = sim.track_data
     starting_metrics = _summaries.starting_population_metrics(sim, len(records))
@@ -924,25 +1037,26 @@ def render_all_codon_population_panel(label: str, sim: ExactSimulationResult,
             st.subheader(label)
             st.caption("All starting codons pooled together with equal starting copies.")
         with action:
-            if st.button(
-                "Fullscreen",
-                icon=":material/fullscreen:",
-                key=f"{panel_key}_fullscreen",
-                width="stretch",
-            ):
-                fullscreen_section(
-                    f"{label}: all codons together",
-                    [
-                        ("Trait fraction among survivors", fraction_fig, f"{panel_key}_fraction"),
-                        ("Survival by starting trait", start_trait_fig, f"{panel_key}_start_trait"),
-                        (
-                            "Stop percentage by starting trait",
-                            start_trait_stop_fig,
-                            f"{panel_key}_start_trait_stop",
-                        ),
-                        ("Surviving vs stopped", survival_fig, f"{panel_key}_survival"),
-                    ],
-                )
+            if show_fullscreen:
+                if st.button(
+                    "Fullscreen",
+                    icon=":material/fullscreen:",
+                    key=f"{panel_key}_fullscreen",
+                    width="stretch",
+                ):
+                    fullscreen_section(
+                        f"{label}: all codons together",
+                        [
+                            ("Trait fraction among survivors", fraction_fig, f"{panel_key}_fraction"),
+                            ("Survival by starting trait", start_trait_fig, f"{panel_key}_start_trait"),
+                            (
+                                "Stop percentage by starting trait",
+                                start_trait_stop_fig,
+                                f"{panel_key}_start_trait_stop",
+                            ),
+                            ("Surviving vs stopped", survival_fig, f"{panel_key}_survival"),
+                        ],
+                    )
 
         m1, m2, m3 = st.columns(3, vertical_alignment="top")
         with m1:
@@ -980,7 +1094,8 @@ def render_all_codon_population_panel(label: str, sim: ExactSimulationResult,
 def render_trait_codon_survival_panel(label: str, sim: ExactSimulationResult,
                                       exp: SampledSimulationResult,
                                       n_gen: int, display_mode: str,
-                                      panel_key: str, selected_trait: str):
+                                      panel_key: str, selected_trait: str,
+                                      show_fullscreen: bool = True):
     records = exp.records
     track_data = sim.track_data
     copies_per_codon = _summaries.starting_population_metrics(
@@ -1012,23 +1127,24 @@ def render_trait_codon_survival_panel(label: str, sim: ExactSimulationResult,
             st.subheader(label)
             st.caption(f"One survival line for each starting codon in {selected_trait}.")
         with action:
-            if st.button(
-                "Fullscreen",
-                icon=":material/fullscreen:",
-                key=f"{panel_key}_fullscreen",
-                width="stretch",
-            ):
-                fullscreen_section(
-                    f"{label}: {selected_trait} codon survival",
-                    [
-                        (f"{selected_trait} codon survival", trait_codon_fig, f"{panel_key}_trait_codon"),
-                        (
-                            f"{selected_trait} amino-acid survival",
-                            trait_aa_fig,
-                            f"{panel_key}_trait_aa",
-                        ),
-                    ],
-                )
+            if show_fullscreen:
+                if st.button(
+                    "Fullscreen",
+                    icon=":material/fullscreen:",
+                    key=f"{panel_key}_fullscreen",
+                    width="stretch",
+                ):
+                    fullscreen_section(
+                        f"{label}: {selected_trait} codon survival",
+                        [
+                            (f"{selected_trait} codon survival", trait_codon_fig, f"{panel_key}_trait_codon"),
+                            (
+                                f"{selected_trait} amino-acid survival",
+                                trait_aa_fig,
+                                f"{panel_key}_trait_aa",
+                            ),
+                        ],
+                    )
         if winner is not None:
             m1, m2, m3 = st.columns(3, vertical_alignment="top")
             with m1:
@@ -1073,6 +1189,71 @@ def render_trait_codon_survival_panel(label: str, sim: ExactSimulationResult,
             trait_aa_fig,
             width="stretch",
             key=f"{panel_key}_trait_aa_survival_chart",
+        )
+
+
+@st.dialog("All-codon population overview", width="large", icon=":material/fullscreen:")
+def fullscreen_all_population_comparison(user_sim: ExactSimulationResult,
+                                         user_exp: SampledSimulationResult,
+                                         preset_sim: ExactSimulationResult,
+                                         preset_exp: SampledSimulationResult,
+                                         n_gen: int, display_mode: str):
+    st.subheader("All-codon population overview")
+    st.caption("Press Esc or use the close button to return to the dashboard.")
+    left, right = st.columns(2)
+    with left:
+        render_all_codon_population_panel(
+            "User probability",
+            user_sim,
+            user_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_all_codons_user",
+            show_fullscreen=False,
+        )
+    with right:
+        render_all_codon_population_panel(
+            "Preset probability",
+            preset_sim,
+            preset_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_all_codons_preset",
+            show_fullscreen=False,
+        )
+
+
+@st.dialog("Trait codon survival", width="large", icon=":material/fullscreen:")
+def fullscreen_trait_survival_comparison(user_sim: ExactSimulationResult,
+                                         user_exp: SampledSimulationResult,
+                                         preset_sim: ExactSimulationResult,
+                                         preset_exp: SampledSimulationResult,
+                                         n_gen: int, display_mode: str,
+                                         selected_trait: str):
+    st.subheader("Trait codon survival")
+    st.caption("Press Esc or use the close button to return to the dashboard.")
+    left, right = st.columns(2)
+    with left:
+        render_trait_codon_survival_panel(
+            "User probability",
+            user_sim,
+            user_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_trait_codons_user",
+            selected_trait,
+            show_fullscreen=False,
+        )
+    with right:
+        render_trait_codon_survival_panel(
+            "Preset probability",
+            preset_sim,
+            preset_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_trait_codons_preset",
+            selected_trait,
+            show_fullscreen=False,
         )
 
 
@@ -1158,6 +1339,46 @@ def render_codon_panel(label: str, codon: str, sim: ExactSimulationResult,
         )
 
 
+@st.dialog("Codon focus comparison", width="large", icon=":material/fullscreen:")
+def fullscreen_codon_focus_comparison(selected_codon: str,
+                                      user_sim: ExactSimulationResult,
+                                      user_exp: SampledSimulationResult,
+                                      preset_sim: ExactSimulationResult,
+                                      preset_exp: SampledSimulationResult,
+                                      n_gen: int, display_mode: str,
+                                      no_more_basis: str,
+                                      no_more_alpha: float):
+    st.subheader("Codon focus comparison")
+    st.caption("Press Esc or use the close button to return to the dashboard.")
+    left, right = st.columns(2)
+    with left:
+        render_codon_panel(
+            "User probability",
+            selected_codon,
+            user_sim,
+            user_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_compare_user",
+            no_more_basis,
+            no_more_alpha,
+            show_fullscreen=False,
+        )
+    with right:
+        render_codon_panel(
+            "Preset probability",
+            selected_codon,
+            preset_sim,
+            preset_exp,
+            n_gen,
+            display_mode,
+            "fullscreen_compare_preset",
+            no_more_basis,
+            no_more_alpha,
+            show_fullscreen=False,
+        )
+
+
 def render_whole_population_view(view_mode: str, run_label: str,
                                  user_sim: ExactSimulationResult,
                                  user_exp: SampledSimulationResult,
@@ -1167,9 +1388,26 @@ def render_whole_population_view(view_mode: str, run_label: str,
                                  exp: SampledSimulationResult,
                                  n_gen: int, display_mode: str):
     st.html('<span id="main-results"></span>')
-    st.subheader("All-codon population overview")
-    st.caption("Pooled view across every valid starting codon.")
+    overview_header, overview_action = st.columns([0.78, 0.22], vertical_alignment="center")
+    with overview_header:
+        st.subheader("All-codon population overview")
+        st.caption("Pooled view across every valid starting codon.")
     if view_mode == "Compare both":
+        with overview_action:
+            if st.button(
+                "Fullscreen",
+                icon=":material/fullscreen:",
+                key="compare_all_population_fullscreen",
+                width="stretch",
+            ):
+                fullscreen_all_population_comparison(
+                    user_sim,
+                    user_exp,
+                    preset_sim,
+                    preset_exp,
+                    n_gen,
+                    display_mode,
+                )
         left, right = st.columns(2)
         with left:
             render_all_codon_population_panel(
@@ -1200,7 +1438,9 @@ def render_whole_population_view(view_mode: str, run_label: str,
         )
 
     st.space("medium")
-    st.subheader("Trait codon survival")
+    trait_header, trait_action = st.columns([0.78, 0.22], vertical_alignment="center")
+    with trait_header:
+        st.subheader("Trait codon survival")
     selected_trait = st.selectbox(
         "Trait drilldown",
         TRAIT_NAMES,
@@ -1209,6 +1449,22 @@ def render_whole_population_view(view_mode: str, run_label: str,
         help="Choose a starting trait to show one survival line per codon in that trait.",
     )
     if view_mode == "Compare both":
+        with trait_action:
+            if st.button(
+                "Fullscreen",
+                icon=":material/fullscreen:",
+                key="compare_trait_survival_fullscreen",
+                width="stretch",
+            ):
+                fullscreen_trait_survival_comparison(
+                    user_sim,
+                    user_exp,
+                    preset_sim,
+                    preset_exp,
+                    n_gen,
+                    display_mode,
+                    selected_trait,
+                )
         left, right = st.columns(2)
         with left:
             render_trait_codon_survival_panel(
@@ -1254,6 +1510,27 @@ def render_codon_focus_view(view_mode: str, run_label: str, selected_codon: str,
                             no_more_alpha: float, generation: int):
     if view_mode == "Compare both":
         st.html('<span id="main-results"></span>')
+        compare_header, compare_action = st.columns([0.78, 0.22], vertical_alignment="center")
+        with compare_header:
+            st.subheader("Codon focus comparison")
+        with compare_action:
+            if st.button(
+                "Fullscreen",
+                icon=":material/fullscreen:",
+                key="compare_codon_focus_fullscreen",
+                width="stretch",
+            ):
+                fullscreen_codon_focus_comparison(
+                    selected_codon,
+                    user_sim,
+                    user_exp,
+                    preset_sim,
+                    preset_exp,
+                    n_gen,
+                    display_mode,
+                    no_more_basis,
+                    no_more_alpha,
+                )
         left, right = st.columns(2)
         with left:
             render_codon_panel("User probability", selected_codon, user_sim, user_exp,
@@ -1333,72 +1610,77 @@ def render_codon_focus_view(view_mode: str, run_label: str, selected_codon: str,
     summary_header, summary_action = st.columns([0.78, 0.22], vertical_alignment="center")
     with summary_header:
         st.subheader("No more category change for all starting codons")
-    nm_df = all_codon_no_more_change(
-        source_exp.records,
-        source_sim.track_data,
-        n_gen,
-        display_mode,
-        no_more_basis,
-        no_more_alpha,
-    )
-    bar_df = nm_df[nm_df["no_more_change"].str.isnumeric()].copy()
-    if not bar_df.empty:
-        bar_df["generation"] = bar_df["no_more_change"].astype(int)
-        fig = px.bar(
-            bar_df.sort_values("generation"),
-            x="codon",
-            y="generation",
-            color="start_category",
-            color_discrete_map=CAT_COLORS,
-            hover_data=["aa", "status"],
-            title="First generation where live category counts stop changing",
-        )
-        fig.update_layout(
-            height=520,
-            margin=dict(l=58, r=24, t=70, b=130),
-            paper_bgcolor=PANEL_BG,
-            plot_bgcolor=PANEL_BG,
-            font=dict(color=INK, size=13),
-            title=dict(
-                text="No more category change by starting codon",
-                font=dict(size=16, color=INK),
-                x=0.02,
-                xanchor="left",
-            ),
-            legend=dict(
-                orientation="h",
-                y=-0.28,
-                x=0,
-                xanchor="left",
-                font=dict(size=12, color=INK),
-            ),
-        )
-        fig.update_xaxes(tickangle=-45, automargin=True)
-        fig.update_yaxes(title="Generation", gridcolor="#E5E7EB", automargin=True, rangemode="tozero")
+
+    if view_mode == "Compare both":
         with summary_action:
             if st.button(
                 "Fullscreen",
                 icon=":material/fullscreen:",
-                key="no_more_change_fullscreen",
+                key="compare_no_more_change_fullscreen",
                 width="stretch",
             ):
-                fullscreen_section(
-                    "No more category change",
-                    [("No more category change", fig, "no_more_change")],
+                fullscreen_no_more_change_comparison(
+                    user_sim,
+                    user_exp,
+                    preset_sim,
+                    preset_exp,
+                    n_gen,
+                    display_mode,
+                    no_more_basis,
+                    no_more_alpha,
                 )
-        st.plotly_chart(fig, width="stretch", key="no_more_change_chart")
-    st.dataframe(
-        nm_df,
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "codon": st.column_config.TextColumn("Codon", pinned=True),
-            "aa": st.column_config.TextColumn("AA"),
-            "start_category": st.column_config.TextColumn("Start category"),
-            "no_more_change": st.column_config.TextColumn("No more change"),
-            "status": st.column_config.TextColumn("Status"),
-        },
-    )
+        left, right = st.columns(2)
+        with left:
+            user_nm_df = all_codon_no_more_change(
+                user_exp.records,
+                user_sim.track_data,
+                n_gen,
+                display_mode,
+                no_more_basis,
+                no_more_alpha,
+            )
+            render_no_more_change_panel(
+                "User probability",
+                user_nm_df,
+                "user",
+            )
+        with right:
+            preset_nm_df = all_codon_no_more_change(
+                preset_exp.records,
+                preset_sim.track_data,
+                n_gen,
+                display_mode,
+                no_more_basis,
+                no_more_alpha,
+            )
+            render_no_more_change_panel(
+                "Preset probability",
+                preset_nm_df,
+                "preset",
+            )
+    else:
+        nm_df = all_codon_no_more_change(
+            exp.records,
+            sim.track_data,
+            n_gen,
+            display_mode,
+            no_more_basis,
+            no_more_alpha,
+        )
+        fig = no_more_change_chart(nm_df)
+        if fig is not None:
+            with summary_action:
+                if st.button(
+                    "Fullscreen",
+                    icon=":material/fullscreen:",
+                    key="no_more_change_fullscreen",
+                    width="stretch",
+                ):
+                    fullscreen_section(
+                        "No more category change",
+                        [("No more category change", fig, "no_more_change")],
+                    )
+        render_no_more_change_panel(run_label, nm_df, "selected")
 
 
 def main():
@@ -1510,6 +1792,7 @@ def main():
         generation = st.slider("Codon-outcome generation", 1, int(n_gen), min(5, int(n_gen)))
 
     loading_slot = st.empty()
+    run_started_at = time.perf_counter()
     with loading_slot.container():
         st.html(
             """
@@ -1539,6 +1822,11 @@ def main():
             int(seed),
         )
     loading_slot.empty()
+    run_elapsed = time.perf_counter() - run_started_at
+
+    with st.sidebar:
+        st.divider()
+        st.caption(f"Analysis runtime: {run_elapsed:.2f} s")
 
     user_sim = ExactSimulationResult.from_legacy_tuple(user_sim_legacy)
     user_exp = SampledSimulationResult.from_legacy_tuple(user_exp_legacy)

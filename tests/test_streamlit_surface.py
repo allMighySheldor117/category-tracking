@@ -147,6 +147,125 @@ class StreamlitSurfaceTests(unittest.TestCase):
             [self.fixture["invalid_probability_error"]],
         )
 
+    def test_analysis_runtime_is_reported_in_sidebar(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        self.assertFalse(app.exception)
+        captions = [item.value for item in app.caption]
+        runtime_caption = next(
+            (caption for caption in captions if caption.startswith("Analysis runtime:")),
+            None,
+        )
+        self.assertIsNotNone(runtime_caption)
+        self.assertRegex(runtime_caption, r"^Analysis runtime: \d+\.\d{2} s$")
+
+    def test_compare_both_no_more_change_uses_side_by_side_panels(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.segmented_control[1].set_value("Compare both")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        no_more_specs = []
+        for element in app.get("plotly_chart"):
+            spec = json.loads(element.proto.spec)
+            title = spec.get("layout", {}).get("title", {}).get("text")
+            if title == "No more category change by starting codon":
+                no_more_specs.append(spec)
+
+        self.assertEqual(len(no_more_specs), 2)
+        for spec in no_more_specs:
+            trace_names = {trace.get("name") for trace in spec.get("data", [])}
+            self.assertFalse(
+                {"User probability", "Preset probability"} & trace_names,
+                trace_names,
+            )
+
+        comparison_tables = [
+            dataframe.value
+            for dataframe in app.dataframe
+            if "no_more_change" in dataframe.value.columns
+        ]
+        self.assertEqual(len(comparison_tables), 2)
+        self.assertTrue(
+            all("probability" not in table.columns for table in comparison_tables)
+        )
+
+        subheaders = [item.value for item in app.subheader]
+        summary_index = subheaders.index("No more category change for all starting codons")
+        self.assertEqual(
+            subheaders[summary_index + 1: summary_index + 3],
+            ["User probability", "Preset probability"],
+        )
+
+    def test_compare_both_no_more_change_has_fullscreen_action(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.segmented_control[1].set_value("Compare both")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        button_keys = [button.key for button in app.button]
+        self.assertIn("compare_no_more_change_fullscreen", button_keys)
+
+        app.button(key="compare_no_more_change_fullscreen").click()
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        subheaders = [item.value for item in app.subheader]
+        self.assertIn("No more category change", subheaders)
+        fullscreen_index = subheaders.index("No more category change")
+        self.assertEqual(
+            subheaders[fullscreen_index + 1: fullscreen_index + 3],
+            ["User probability", "Preset probability"],
+        )
+
+        no_more_specs = []
+        for element in app.get("plotly_chart"):
+            spec = json.loads(element.proto.spec)
+            title = spec.get("layout", {}).get("title", {}).get("text")
+            if title == "No more category change by starting codon":
+                no_more_specs.append(spec)
+        self.assertGreaterEqual(len(no_more_specs), 4)
+
+    def test_whole_population_compare_sections_have_fullscreen_actions(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.segmented_control[0].set_value("Whole population")
+        app.segmented_control[1].set_value("Compare both")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        button_keys = [button.key for button in app.button]
+        self.assertIn("compare_all_population_fullscreen", button_keys)
+        self.assertIn("compare_trait_survival_fullscreen", button_keys)
+
+        app.button(key="compare_all_population_fullscreen").click()
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        subheaders = [item.value for item in app.subheader]
+        self.assertIn("All-codon population overview", subheaders)
+        self.assertGreaterEqual(subheaders.count("User probability"), 2)
+        self.assertGreaterEqual(subheaders.count("Preset probability"), 2)
+
+    def test_codon_focus_compare_pair_has_section_fullscreen_action(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.segmented_control[1].set_value("Compare both")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        button_keys = [button.key for button in app.button]
+        self.assertIn("compare_codon_focus_fullscreen", button_keys)
+
+        app.button(key="compare_codon_focus_fullscreen").click()
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+
+        subheaders = [item.value for item in app.subheader]
+        self.assertIn("Codon focus comparison", subheaders)
+        fullscreen_index = subheaders.index("Codon focus comparison")
+        self.assertEqual(
+            subheaders[fullscreen_index + 1: fullscreen_index + 3],
+            ["User probability", "Preset probability"],
+        )
+
     def test_accessibility_and_theme_contract(self) -> None:
         source = APP_FILE.read_text(encoding="utf-8")
         for snippet in self.fixture["accessibility_source_contract"]:

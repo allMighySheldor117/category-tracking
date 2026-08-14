@@ -7,11 +7,13 @@ This directory is the canonical, self-contained application produced by Phase 2.
 Run commands from this directory:
 
 ```powershell
-streamlit run category_tracking_web.py
+python -m streamlit run category_tracking_web.py
 python category_tracking.py
 ```
 
-The Streamlit app imports scientific behavior directly from `engine/`. The Tkinter entry point remains a compatibility adapter: its historical public functions and tuple results are preserved while their implementations delegate to the engine.
+The Streamlit app is the primary accepted user-facing frontend. It imports scientific behavior directly from `engine/`. The Tkinter entry point remains a compatibility adapter: its historical public functions and tuple results are preserved while their implementations delegate to the engine.
+
+The Phase 6 Next.js workspace under `frontend/` is deferred, experimental, and non-primary. It should not be treated as the accepted release UI until a later approved phase or contract mutation fixes its layout, controls, and chart parity enough for user acceptance.
 
 Exact probability is the authoritative deterministic scientific path. New scientific callers should use `run_exact_analysis` and the named exact query APIs exported from `engine`. The Streamlit UI still preserves its frozen labels, including `Sampled copies` and `Exact probability`, for compatibility.
 

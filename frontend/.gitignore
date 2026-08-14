@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Next.js generated output
+.next/
+out/
+
+# Test and coverage output
+coverage/
+playwright-report/
+test-results/
+
+# Local environment files
+.env*
+!.env.example
+
+# TypeScript cache
+*.tsbuildinfo
+
