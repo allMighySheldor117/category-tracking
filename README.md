@@ -86,3 +86,21 @@ python -m uvicorn api.main:app --reload
 ```
 
 The initial service exposes `GET /health` and `GET /api/v1/metadata`. Simulation and comparison endpoints are added by later Phase 4 implementation steps.
+
+## Streamlit Community Cloud deployment
+
+The accepted public frontend is the Streamlit app:
+
+```powershell
+python -m streamlit run category_tracking_web.py
+```
+
+For Streamlit Community Cloud, use:
+
+- Repository: `https://github.com/allMighySheldor117/category-tracking.git`
+- Branch: `master`
+- Main file path: `category_tracking_web.py`
+- Dependency file: root `requirements.txt`
+- Recommended Python version: choose Python 3.12 in Streamlit Cloud settings unless later deployment evidence requires another supported version.
+
+No secrets, database, worker, or external storage are required for the current Streamlit deployment. The free Community Cloud deployment is intended for public demo, teaching, and small-team sharing; university-server deployment remains a later phase.

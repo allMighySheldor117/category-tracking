@@ -21,17 +21,24 @@ def _python_sources(root: Path) -> list[Path]:
 
 
 class ApiBoundaryTests(unittest.TestCase):
-    def test_requirements_contain_only_approved_phase4_dependencies(self) -> None:
+    def test_requirements_contain_only_approved_backend_and_deployment_dependencies(self) -> None:
         requirements = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
         meaningful = [line.strip() for line in requirements if line.strip() and not line.startswith("#")]
 
+        approved_backend_dependencies = [
+            "fastapi>=0.139,<0.141",
+            "uvicorn[standard]>=0.51,<0.52",
+            "httpx>=0.28,<0.29",
+        ]
+        approved_phase9_deployment_dependencies = [
+            "streamlit>=1.60,<1.61",
+            "pandas>=2.2,<2.3",
+            "plotly>=6.8,<6.9",
+        ]
+
         self.assertEqual(
             meaningful,
-            [
-                "fastapi>=0.139,<0.141",
-                "uvicorn[standard]>=0.51,<0.52",
-                "httpx>=0.28,<0.29",
-            ],
+            approved_backend_dependencies + approved_phase9_deployment_dependencies,
         )
 
     def test_openapi_has_exactly_approved_routes(self) -> None:

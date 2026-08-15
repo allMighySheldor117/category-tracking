@@ -18,17 +18,24 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ApiAppTests(unittest.TestCase):
-    def test_dependency_file_contains_only_approved_phase4_packages(self) -> None:
+    def test_dependency_file_contains_approved_backend_and_deployment_packages(self) -> None:
         requirements = (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
         meaningful = [line.strip() for line in requirements if line.strip() and not line.startswith("#")]
 
+        approved_backend_dependencies = [
+            "fastapi>=0.139,<0.141",
+            "uvicorn[standard]>=0.51,<0.52",
+            "httpx>=0.28,<0.29",
+        ]
+        approved_phase9_deployment_dependencies = [
+            "streamlit>=1.60,<1.61",
+            "pandas>=2.2,<2.3",
+            "plotly>=6.8,<6.9",
+        ]
+
         self.assertEqual(
             meaningful,
-            [
-                "fastapi>=0.139,<0.141",
-                "uvicorn[standard]>=0.51,<0.52",
-                "httpx>=0.28,<0.29",
-            ],
+            approved_backend_dependencies + approved_phase9_deployment_dependencies,
         )
 
     def test_app_import_and_health_endpoint(self) -> None:
