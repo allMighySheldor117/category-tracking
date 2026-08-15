@@ -1100,3 +1100,247 @@ fix: make Streamlit app cloud-safe for Phase 9
 Exact next action requiring approval:
 
 - Approve commit/push of the three modified files, then reboot/redeploy the Streamlit Community Cloud app and rerun public browser QA on `https://category-tracking.streamlit.app/`.
+
+## Phase 9 Step 6 public deployment QA after reboot
+
+UTC timestamp: `2026-08-15T10:19:03Z`
+
+Scope:
+
+- Public Streamlit Community Cloud QA only after reboot/redeploy.
+- Deployment URL: `https://category-tracking.streamlit.app/`
+- Expected deployed commit: `6e0c455 fix: make Streamlit app cloud-safe for Phase 9`
+- Do not start Step 7.
+- Do not start Phase 10.
+- Do not edit code, tests, fixtures, requirements, or deployment files.
+
+Prerequisites:
+
+- User confirmed Streamlit Community Cloud was rebooted/redeployed after commit `6e0c455`.
+- Latest local commit: `6e0c455 fix: make Streamlit app cloud-safe for Phase 9`.
+- Working tree before the execution-log update was clean.
+
+Local verification baseline:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -m unittest discover -s tests -p "test_streamlit_surface.py" -v
+python diagnose_category_tracking_web.py
+python -m tests.compat.diagnose_category_tracking_web_phase1_baseline
+python -c "import sys, engine; forbidden={'streamlit','tkinter','plotly','PyQt5'}; assert not forbidden.intersection(sys.modules); print('engine-ui-independence-ok')"
+```
+
+Results:
+
+- Exit code: `0`
+- `test_streamlit_surface.py`: `Ran 15 tests ... OK`
+- `diagnose_category_tracking_web.py`: all `17/17` PASS lines observed.
+- `tests.compat.diagnose_category_tracking_web_phase1_baseline`: all `17/17` PASS lines observed.
+- Engine UI-independence check: `engine-ui-independence-ok`
+
+Public browser QA evidence:
+
+Initial navigation:
+
+- Opened `https://category-tracking.streamlit.app/`.
+- Browser network showed Streamlit Cloud wrapper and app assets loading.
+- Page body after load:
+
+```text
+Oh no.
+
+Error running app. If this keeps happening, please contact support.
+```
+
+Initial-load result:
+
+- `Codon Category Tracking Lab`: not visible.
+- `Run analysis`: not visible.
+- Configure / Run / Inspect cards: not visible.
+- Sidebar controls: not visible.
+- Generic Streamlit error page: visible.
+- Python traceback: not visible in browser.
+
+Console/network observations:
+
+- Browser console showed wrapper warnings and WebSocket close noise.
+- Browser console did not expose the Python traceback.
+- Browser network included Streamlit Cloud app wrapper requests and WebSocket activity.
+- No actionable Python error was visible from the public browser page.
+
+Refresh stability check:
+
+- Reloaded `https://category-tracking.streamlit.app/` with cache ignored.
+- After reload, body still showed:
+
+```text
+Oh no.
+
+Error running app. If this keeps happening, please contact support.
+```
+
+- `Codon Category Tracking Lab`: still not visible.
+- `Run analysis`: still not visible.
+- Generic Streamlit error page: still visible.
+
+Step 6 public QA disposition:
+
+- Public deployment QA: `BLOCKED`.
+- Failure point: initial public app load, before any user interaction.
+- The prior `Compare both` path could not be tested because the public app did not reach the UI.
+
+Failure classification:
+
+- Confirmed category: public Streamlit Cloud runtime failure.
+- Likely categories still requiring Cloud logs:
+  - package/runtime error,
+  - Python/environment mismatch,
+  - Streamlit Cloud platform issue,
+  - resource/health issue,
+  - other runtime exception.
+- Browser alone cannot identify the root Python exception because Streamlit Cloud shows only the generic error page.
+
+Required next evidence:
+
+- Retrieve the latest Streamlit Community Cloud logs after the reboot and commit `6e0c455`.
+- Capture the Python traceback or error lines immediately before/after the generic `Error running app` state.
+- Do not modify files until the traceback is known.
+
+Safety confirmations:
+
+- No production code was modified during this QA step.
+- No tests were modified during this QA step.
+- No fixtures were modified.
+- No requirements/dependencies were modified.
+- No secrets were added.
+- No database, storage, workers, auth, Redis/Celery/RQ, or infrastructure was added.
+- No Git action occurred.
+- Step 7 was not started.
+- Phase 10 was not started.
+
+Exact next action requiring approval:
+
+- User should send the latest Streamlit Cloud logs from the failed reboot after `6e0c455`, especially the traceback/error lines after dependency install and app startup. Then reopen Phase 9 Step 6 narrowly to diagnose and fix only the public runtime failure.
+
+## Phase 9 final closeout — Streamlit Cloud attempted/limited
+
+UTC timestamp: `2026-08-15T10:30:10Z`
+
+User decision:
+
+- The user explicitly chose to stop debugging Streamlit Community Cloud for now.
+- The user chose to close Phase 9 as an attempted public demo deployment that is blocked/limited by Streamlit Community Cloud runtime health for the current/heavy app workload.
+- The intended next phase is `Phase 10 — Free VM Deployment for Heavy Streamlit Workloads`, likely targeting Oracle Cloud Always Free first and university server deployment later.
+- Phase 10 was not started during this closeout.
+
+Repository status:
+
+- Branch: `master`
+- Latest pushed commit: `6e0c455 fix: make Streamlit app cloud-safe for Phase 9`
+- Remote: `https://github.com/allMighySheldor117/category-tracking.git`
+- Working tree before closeout append:
+
+```text
+ M plans/phase-9-execution-log.md
+```
+
+The existing working-tree change was the prior public QA evidence in this execution log. No production files were modified.
+
+Deployment evidence:
+
+- Public deployment URL: `https://category-tracking.streamlit.app/`
+- Streamlit Community Cloud repository/branch/main module:
+  - repository: `category-tracking`
+  - branch: `master`
+  - main module: `category_tracking_web.py`
+- Streamlit Cloud dependency installation succeeded from `requirements.txt`.
+- Streamlit Cloud used Python `3.12.13`.
+- Streamlit `1.60.0`, pandas `2.2.3`, and Plotly `6.8.0` were installed.
+- Streamlit Cloud started the server on `:::8501`.
+- Public browser QA after reboot still failed at initial load with:
+
+```text
+Oh no.
+
+Error running app. If this keeps happening, please contact support.
+```
+
+- Streamlit Cloud health check later failed with:
+
+```text
+Get "http://localhost:8501/healthz": read tcp 127.0.0.1:40074->127.0.0.1:8501: read: connection reset by peer
+```
+
+- Browser logs did not expose a Python traceback.
+
+Final verification command:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -m unittest discover -s tests -p "test_streamlit_surface.py" -v
+python diagnose_category_tracking_web.py
+python -m tests.compat.diagnose_category_tracking_web_phase1_baseline
+python -c "import sys, engine; forbidden={'streamlit','tkinter','plotly','PyQt5'}; assert not forbidden.intersection(sys.modules); print('engine-ui-independence-ok')"
+```
+
+Final verification result:
+
+- Exit code: `0`
+- `test_streamlit_surface.py`: `Ran 15 tests ... OK`
+- `diagnose_category_tracking_web.py`: all `17/17` PASS lines observed.
+- `tests.compat.diagnose_category_tracking_web_phase1_baseline`: all `17/17` PASS lines observed.
+- Engine UI-independence check: `engine-ui-independence-ok`
+
+Final Phase 9 disposition:
+
+```text
+Closed as attempted public demo deployment; blocked/limited by Streamlit Community Cloud runtime health for current/heavy workload.
+```
+
+Rationale:
+
+- Local application verification remains green.
+- Dependencies install successfully on Streamlit Cloud.
+- The Streamlit server starts on Cloud.
+- The public app does not remain healthy enough to pass initial public browser QA.
+- The user's expected heavier workloads, such as large sampled runs, are not a good match for Streamlit Community Cloud's lightweight public-demo environment.
+- Continuing to debug Streamlit Cloud is lower value than moving to a VM/server deployment path with controllable CPU/RAM.
+
+Recommended next phase:
+
+```text
+Phase 10 — Free VM Deployment for Heavy Streamlit Workloads
+```
+
+Recommended target order:
+
+1. Oracle Cloud Always Free VM.
+2. University server using the same server-deployment pattern.
+3. Paid VPS only if free/server options are insufficient.
+
+Safety confirmations:
+
+- No app code was modified during this closeout.
+- No tests were modified during this closeout.
+- No fixtures were modified.
+- No diagnostics were modified.
+- No dependency files were modified.
+- No README or contract files were modified.
+- No secrets were added.
+- No database was added.
+- No external storage was added.
+- No workers were added.
+- No auth was added.
+- No Redis/Celery/RQ was added.
+- No Git action occurred.
+- Phase 10 was not started.
+
+Recommended commit message:
+
+```text
+docs: close Phase 9 Streamlit Cloud attempt
+```
+
+Exact next action requiring approval:
+
+- Approve committing and pushing the Phase 9 execution-log closeout, then start a Phase 10 Blueprint for `Free VM Deployment for Heavy Streamlit Workloads`.
