@@ -658,3 +658,445 @@ Required next action:
 
 - Approve Phase 9 Step 6 if you want to begin the Streamlit Community Cloud connection/deployment setup.
 - Step 6 is the first phase step that should involve opening the Streamlit Community Cloud dashboard and linking the GitHub repository.
+
+## Phase 9 Step 6 - Streamlit Community Cloud connection and deployment setup
+
+UTC start timestamp: `2026-08-15T08:21:21Z`
+
+Scope:
+
+- Execute Phase 9 Blueprint Step 6 only.
+- Connect the pushed GitHub repository to Streamlit Community Cloud and create the first public deployment if the browser/session permissions allow it.
+- Do not start Step 7.
+- Do not commit, push, branch, tag, create a PR, or otherwise mutate Git.
+- Do not modify production code, tests, fixtures, dependencies, or README during Step 6.
+
+Prerequisite evidence:
+
+- Current branch: `master`.
+- Latest pushed/local commit: `35c0179 feat: prepare Streamlit Cloud deployment for Phase 9`.
+- Remote: `https://github.com/allMighySheldor117/category-tracking.git`.
+- Working tree status before this log append: clean.
+- Phase 9 Steps 1-5 are recorded complete.
+- Phase 9 runtime dependencies are present in `requirements.txt`.
+- No secrets, database, external storage, worker/background infrastructure, Redis/Celery/RQ, or auth are required.
+
+Streamlit Cloud setup values to use:
+
+- Platform: Streamlit Community Cloud.
+- Repository: `allMighySheldor117/category-tracking`.
+- Branch: `master`.
+- Main file path: `category_tracking_web.py`.
+- Dependency file: root `requirements.txt`.
+- App URL/name, if prompted: `category-tracking`.
+- Python version: Python 3.12 if available; otherwise record Streamlit Cloud default.
+
+Pre-deployment local verification:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -c "import streamlit, pandas, plotly; import fastapi, uvicorn, httpx; print('phase9-dependencies-import-ok')"
+python -m unittest discover -s tests -p "test_streamlit_surface.py" -v
+python diagnose_category_tracking_web.py
+python -m tests.compat.diagnose_category_tracking_web_phase1_baseline
+python -m unittest discover -s tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_api_job*.py" -v
+python -m unittest discover -s tests -p "test_api_*.py" -v
+python -c "import sys, engine; forbidden={'streamlit','tkinter','plotly','PyQt5'}; assert not forbidden.intersection(sys.modules); print('engine-ui-independence-ok')"
+```
+
+Exit code: `0`
+
+Pre-deployment verification summary:
+
+- Phase 9 dependency import check passed: `phase9-dependencies-import-ok`.
+- Streamlit surface tests passed: `Ran 13 tests`, `OK`.
+- Primary diagnostic passed all 17 checks.
+- Frozen compatibility diagnostic passed all 17 checks.
+- Full Python suite passed: `Ran 225 tests`, `OK`.
+- API job tests passed: `Ran 18 tests`, `OK`.
+- API tests passed: `Ran 52 tests`, `OK`.
+- Engine UI-independence check passed: `engine-ui-independence-ok`.
+
+Streamlit Community Cloud browser setup attempt:
+
+- Opened `https://share.streamlit.io/`.
+- Page title: `Sign in · Streamlit`.
+- Clicked `Continue to sign-in`.
+- Selected `Continue with GitHub`, matching the user's stated account setup.
+- Browser redirected to GitHub OAuth login:
+  - Page title: `Sign in to GitHub · GitHub`.
+  - Page text included: `Sign in to GitHub to continue to Streamlit Community Cloud`.
+
+Step 6 blocker:
+
+- `BLOCKED FOR USER AUTHENTICATION`.
+- Deployment setup could not continue because GitHub authentication is required in the browser session.
+- No credentials were entered or requested.
+- No GitHub repository permissions were granted by the agent.
+- No Streamlit Cloud app was created.
+- No deployment URL exists yet.
+- No public browser QA was run because deployment did not reach a public app URL.
+
+Required manual action:
+
+1. In the browser, sign in to GitHub for Streamlit Community Cloud.
+2. If Streamlit/GitHub asks for repository access, grant the minimum access needed for `allMighySheldor117/category-tracking`.
+3. After the dashboard is available, create/deploy the app with:
+   - Repository: `allMighySheldor117/category-tracking`
+   - Branch: `master`
+   - Main file path: `category_tracking_web.py`
+   - App URL/name: `category-tracking`, if available
+   - Python version: Python 3.12 if offered; otherwise use the Streamlit Cloud default and record it
+   - Secrets: none
+
+Step 6 current disposition:
+
+- Local deploy readiness: `PASS`.
+- Streamlit Cloud setup: `BLOCKED FOR USER AUTHENTICATION`.
+- Public deployed app QA: not run; no deployment URL exists yet.
+
+Safety confirmations:
+
+- No secrets were added.
+- No database, external storage, workers, Redis/Celery/RQ, auth, or infrastructure were added.
+- No code, tests, fixtures, dependencies, or README files were modified during Step 6.
+- No Git action occurred during Step 6.
+- Step 7 was not started.
+- Phase 10 was not started.
+
+UTC stop timestamp for this partial Step 6 attempt: `2026-08-15T08:28:14Z`
+
+## Phase 9 Step 6 resumed after user completed Streamlit Cloud authentication
+
+UTC timestamp: `2026-08-15T09:23:07Z`
+
+User-reported deployment progress:
+
+- The user changed the Streamlit Cloud runtime from Python `3.14.7` to Python `3.12`.
+- After changing Python version, the user reported that the deployment worked.
+- Deployment URL inferred from Streamlit Cloud logs and public app address:
+  - `https://category-tracking.streamlit.app/`
+
+Public browser QA:
+
+- Opened `https://category-tracking.streamlit.app/`.
+- Initial public page load rendered the Streamlit app and expected UI inside the Streamlit iframe.
+- Evidence from the accessibility tree included:
+  - title: `Codon Category Tracking Lab`
+  - sidebar controls: `Generations`, `Copies per codon`, `Sampling seed`
+  - view controls: `Your probability`, `Preset`, `Compare both`
+  - workspace controls: `Codon focus`, `Whole population`
+  - page content: `Configure`, `Run`, `Inspect`
+  - runtime display: `Analysis runtime`
+  - chart/table/fullscreen content and controls.
+
+Public QA blocker:
+
+- During the safe public browser interaction check, selecting `Compare both` changed the public URL to:
+  - `https://category-tracking.streamlit.app/?view=Compare+both`
+- The public page then showed Streamlit's generic error page:
+  - `Oh no.`
+  - `Error running app. If this keeps happening, please contact support.`
+- A fresh reload of `https://category-tracking.streamlit.app/` also showed the generic Streamlit error page.
+- Browser console showed:
+  - `INITIAL -> (10, 0, ) -> ERROR`
+
+Current Step 6 disposition:
+
+- Streamlit Community Cloud deployment was created.
+- Public deployment URL exists.
+- Public app initially rendered.
+- Public browser QA is `BLOCKED` because the public app entered Streamlit runtime error state during/after the `Compare both` interaction.
+- The public error page does not expose the Python traceback or root cause.
+
+Required next evidence:
+
+- Retrieve the app error traceback from Streamlit Community Cloud logs.
+- Send the traceback/log lines after the generic `Error running app` state.
+- Classify the failure once logs are available:
+  - Python/runtime compatibility
+  - dependency/runtime error
+  - memory/resource limit
+  - query parameter/state handling
+  - Streamlit Cloud platform issue
+  - other.
+
+Safety confirmations:
+
+- No code, tests, fixtures, dependencies, contracts, or README files were modified.
+- No secrets were added.
+- No database, external storage, worker, Redis/Celery/RQ, auth, or infrastructure was added.
+- No Git action occurred.
+- Step 7 was not started.
+- Phase 10 was not started.
+
+## Phase 9 Step 6 narrow cloud-runtime health fix reopened
+
+UTC timestamp: `2026-08-15T09:34:46Z`
+
+Reopen scope:
+
+- Fix only the Streamlit Community Cloud runtime health failure observed during Phase 9 Step 6 public QA.
+- Keep deployment scope limited to Step 6.
+- Do not start Step 7.
+- Do not start Phase 10.
+- Do not add secrets, database, storage, workers, auth, Redis/Celery/RQ, or university-server work.
+
+Cloud failure evidence:
+
+```text
+The service has encountered an error while checking the health of the Streamlit app:
+Get "http://localhost:8501/healthz": read tcp 127.0.0.1:38064->127.0.0.1:8501: read: connection reset by peer
+```
+
+Public browser QA evidence before reopen:
+
+- Public URL exists: `https://category-tracking.streamlit.app/`.
+- Initial public load rendered the accepted Streamlit UI.
+- Selecting `Compare both` changed the app URL to `https://category-tracking.streamlit.app/?view=Compare+both`.
+- The public app then showed Streamlit's generic runtime error page.
+- Fresh reload also showed the generic runtime error page.
+
+Pre-change touched-file manifest:
+
+| Path | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `category_tracking_web.py` | 66915 | `8F8480FEDFD139ABEF7A77BD0BAD3EF810CC60AB74F0858CB3215C92BA668EEA` |
+| `tests/test_streamlit_surface.py` | 14927 | `D92E840ACD28B90653ED3723CA0C591ECA76D8847CD0505FE5EFB981E53BD58D` |
+| `plans/phase-9-execution-log.md` | 37356 | `97292B06CAFE1F7C37171834718BA0E1F14A6310BDC6A3FE1DB185F948688DA3` |
+
+Backup directory:
+
+- `C:\Users\hatem\AppData\Local\Temp\phase9-cloud-runtime-fix-backup-20260815T093447Z`
+
+Style-compliance declaration:
+
+- Golden exemplar: `category_tracking_web.py`.
+- This fix must avoid duplicating biological tables, mutation matrices, algorithms, or scientific formulas.
+- It must avoid changing engine/API behavior, chart data/types/order, table contents, frozen fixtures, diagnostics, or accepted Streamlit visuals after analysis runs.
+- It must avoid weakening tests and must not start Step 7 or Phase 10.
+
+## Phase 9 Step 6 narrow cloud-runtime health fix closeout
+
+UTC completion timestamp: `2026-08-15T09:51:30Z`
+
+Root-cause classification:
+
+- Category: Streamlit Cloud runtime/resource-health failure caused by eager app computation during reruns.
+- Evidence:
+  - The public app initially rendered, then entered Streamlit's generic runtime error state after the `Compare both` interaction.
+  - The Cloud log showed the Streamlit health check failing with `connection reset by peer`.
+  - Local inspection found that `category_tracking_web.py` executed both user-probability and preset-probability `run_cached(...)` computations unconditionally on page render/rerun.
+  - That meant initial load and `?view=Compare+both` reruns could start heavier codon simulations before the user explicitly requested analysis.
+
+Implemented fix:
+
+- Added an explicit `Run analysis` gate before scientific computation.
+- Added session-state storage for the latest completed analysis result.
+- Added a lightweight pre-run guidance panel so Cloud initial load remains cheap.
+- Preserved the accepted Phase 7/8 visual result after `Run analysis`.
+- Preserved existing chart types, chart data, chart order, table contents, fullscreen behavior, scientific outputs, engine behavior, FastAPI behavior, Phase 5 job behavior, fixtures, diagnostics, and dependency files.
+- Preserved Whole population diagnostic compatibility by rendering the `Trait drilldown` selector before analysis runs.
+
+Touched-file manifest:
+
+| Path | Purpose |
+| --- | --- |
+| `category_tracking_web.py` | Add explicit run gate, cached result reuse, lightweight pre-run guidance, and runtime captions. |
+| `tests/test_streamlit_surface.py` | Add RED/GREEN coverage for cloud-safe initial load and explicit-run result rendering; update result-heavy tests to click `Run analysis`. |
+| `plans/phase-9-execution-log.md` | Record reopen, evidence, verification, and closeout. |
+
+TDD RED evidence:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -m unittest discover -s tests -p "test_streamlit_surface.py" -v
+```
+
+- Exit code: `1`
+- Intended failures:
+  - `run_analysis` button not present before implementation.
+  - Initial load still rendered eager charts/dataframes before implementation.
+  - Explicit-run tests failed before implementation.
+
+TDD GREEN / verification evidence:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -m unittest discover -s tests -p "test_streamlit_surface.py" -v
+```
+
+- Exit code: `0`
+- Result: `Ran 15 tests ... OK`
+
+```powershell
+python diagnose_category_tracking_web.py
+```
+
+- Exit code: `0`
+- Result: `17/17` checks passed.
+
+```powershell
+python -m tests.compat.diagnose_category_tracking_web_phase1_baseline
+```
+
+- Exit code: `0`
+- Result: `17/17` checks passed.
+
+```powershell
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+- Exit code: `0`
+- Result: `Ran 227 tests ... OK`
+
+```powershell
+python -m unittest discover -s tests -p "test_api_job*.py" -v
+```
+
+- Exit code: `0`
+- Result: `Ran 18 tests ... OK`
+
+```powershell
+python -m unittest discover -s tests -p "test_api_*.py" -v
+```
+
+- Exit code: `0`
+- Result: `Ran 52 tests ... OK`
+
+```powershell
+python -c "import sys, engine; forbidden={'streamlit','tkinter','plotly','PyQt5'}; assert not forbidden.intersection(sys.modules); print('engine-ui-independence-ok')"
+```
+
+- Exit code: `0`
+- Result: `engine-ui-independence-ok`
+
+Warnings:
+
+- Streamlit bare-mode warnings during surface tests.
+- Inherited FastAPI/TestClient `httpx2` deprecation warning.
+- No warning changes were introduced by this fix.
+
+Local browser QA evidence:
+
+- Local server command:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -m streamlit run category_tracking_web.py --server.address 127.0.0.1 --server.port 8501 --server.headless true
+```
+
+- Local process:
+  - PID: `27404`
+  - Confirmed command line: `python.exe -m streamlit run category_tracking_web.py ...`
+  - Confirmed listener: `127.0.0.1:8501`
+
+Initial-load QA:
+
+- URL: `http://127.0.0.1:8501/`
+- Title visible: `Codon Category Tracking Lab`
+- Sidebar controls visible.
+- `Run analysis` button visible.
+- Runtime caption visible: `Analysis runtime: not run yet.`
+- Pre-run guidance visible: `Ready when you are`
+- Pre-run caption visible: `Press Run analysis to compute charts and tables for the current sidebar settings.`
+- No traceback.
+- No result charts/dataframes rendered before explicit run.
+
+Explicit-run QA:
+
+- Clicked `Run analysis`.
+- Runtime caption updated: `Analysis runtime: 3.70 s`
+- Result charts rendered.
+- `No more category change for all starting codons` rendered.
+- No traceback.
+
+Compare-both QA:
+
+- Switched to `Compare both`.
+- URL became `http://127.0.0.1:8501/?view=Compare+both`.
+- Runtime caption remained visible.
+- `User probability` and `Preset probability` content rendered.
+- `No more category change for all starting codons` rendered.
+- No traceback.
+- No Streamlit generic error page.
+
+Whole-population QA:
+
+- Switched to `Whole population` after `Compare both`.
+- URL became `http://127.0.0.1:8501/?view=Compare+both&workspace=Whole+population`.
+- Runtime caption remained visible.
+- `Trait drilldown` rendered.
+- Charts rendered.
+- No traceback.
+
+Local server cleanup:
+
+- Confirmed PID `27404` was the local Streamlit QA process.
+- Stopped PID `27404`.
+- Confirmed no remaining listener/process on port `8501`.
+
+Post-change hashes:
+
+| Path | SHA-256 |
+| --- | --- |
+| `category_tracking_web.py` | `B4560A97C26DED7AFAB4D6144F4D1A0DD14CDACD1646BA8E09D070309DB79DA9` |
+| `tests/test_streamlit_surface.py` | `84E075415B7C34DD0F732E9B3713E16C14DB6A2B3AC5FC4B3A59AD658BA06690` |
+| `plans/phase-9-execution-log.md` | `E52A7628669C9AE487A63E667A3F5529072D05F4C3CF6509EC8D9733D016200B` |
+
+Generated-file and boundary audit:
+
+- No `__pycache__` directories found.
+- No `.next` directories found.
+- No engine files modified.
+- No API files modified.
+- No frontend files modified.
+- No fixtures modified.
+- No diagnostics modified.
+- No dependency files modified.
+- No secrets added.
+- No database added.
+- No storage added.
+- No workers added.
+- No Redis/Celery/RQ added.
+- No auth added.
+- No infrastructure added.
+
+Read-only Git status:
+
+```text
+master
+35c0179 feat: prepare Streamlit Cloud deployment for Phase 9
+origin https://github.com/allMighySheldor117/category-tracking.git
+```
+
+Working-tree changes:
+
+```text
+ M category_tracking_web.py
+ M plans/phase-9-execution-log.md
+ M tests/test_streamlit_surface.py
+```
+
+Current Step 6 disposition:
+
+- Local Step 6 cloud-runtime fix verification: `PASS`.
+- Local browser QA for the former failure path: `PASS`.
+- Public Streamlit Cloud QA: pending commit/push and Cloud reboot/redeploy.
+
+Safety confirmations:
+
+- No Git action occurred.
+- Step 7 was not started.
+- Phase 10 was not started.
+
+Recommended commit message:
+
+```text
+fix: make Streamlit app cloud-safe for Phase 9
+```
+
+Exact next action requiring approval:
+
+- Approve commit/push of the three modified files, then reboot/redeploy the Streamlit Community Cloud app and rerun public browser QA on `https://category-tracking.streamlit.app/`.

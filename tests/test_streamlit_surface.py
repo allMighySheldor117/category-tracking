@@ -43,6 +43,11 @@ def chart_contract(app: AppTest) -> list[dict[str, Any]]:
     return charts
 
 
+def click_run_analysis(app: AppTest) -> AppTest:
+    app.button(key="run_analysis").click()
+    return app.run(timeout=120)
+
+
 class StreamlitSurfaceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -60,13 +65,9 @@ class StreamlitSurfaceTests(unittest.TestCase):
         self.assertEqual([item.value for item in app.header], [page["header"]])
         self.assertEqual(len(app.exception), page["default_exception_count"])
         self.assertEqual(len(app.error), page["default_error_count"])
-        self.assertEqual(len(app.get("plotly_chart")), page["default_plotly_count"])
-        self.assertEqual(len(app.dataframe), page["default_dataframe_count"])
-        self.assertEqual(list(app.dataframe[0].value.shape), page["default_dataframe_shape"])
-        self.assertEqual(
-            list(app.dataframe[0].value.columns),
-            page["default_dataframe_columns"],
-        )
+        self.assertEqual(len(app.get("plotly_chart")), 0)
+        self.assertEqual(len(app.dataframe), 0)
+        self.assertIn("run_analysis", [button.key for button in app.button])
 
         segmented = [
             widget_contract(item, ("type", "label", "key", "value", "options"))
@@ -105,12 +106,12 @@ class StreamlitSurfaceTests(unittest.TestCase):
             widget_contract(app.slider[0], ("label", "value", "min", "max", "step")),
             self.fixture["slider"],
         )
-        self.assertEqual(chart_contract(app), self.fixture["default_charts"])
 
     def test_whole_population_surface(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
         app.segmented_control[0].set_value("Whole population")
         app.run(timeout=120)
+        click_run_analysis(app)
         expected = self.fixture["whole_population"]
         self.assertFalse(app.exception)
         self.assertEqual(len(app.get("plotly_chart")), expected["plotly_count"])
@@ -129,6 +130,7 @@ class StreamlitSurfaceTests(unittest.TestCase):
         for key, value in expected["injected"].items():
             app.query_params[key] = value
         app.run(timeout=120)
+        click_run_analysis(app)
         self.assertFalse(app.exception)
         self.assertEqual(dict(app.query_params), expected["retained_query_params"])
         self.assertEqual(
@@ -147,8 +149,52 @@ class StreamlitSurfaceTests(unittest.TestCase):
             [self.fixture["invalid_probability_error"]],
         )
 
+    def test_cloud_safe_initial_load_waits_for_explicit_run(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        self.assertFalse(app.exception)
+        button_keys = [button.key for button in app.button]
+        self.assertIn("run_analysis", button_keys)
+        self.assertEqual(len(app.get("plotly_chart")), 0)
+        self.assertEqual(len(app.dataframe), 0)
+
+        captions = [item.value for item in app.caption]
+        self.assertIn(
+            "Press Run analysis to compute charts and tables for the current sidebar settings.",
+            captions,
+        )
+
+        app.segmented_control[1].set_value("Compare both")
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+        self.assertEqual(len(app.get("plotly_chart")), 0)
+        self.assertEqual(len(app.dataframe), 0)
+
+    def test_explicit_run_renders_accepted_default_results(self) -> None:
+        app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.button(key="run_analysis").click()
+        app.run(timeout=120)
+        self.assertFalse(app.exception)
+        page = self.fixture["page"]
+        self.assertEqual(len(app.get("plotly_chart")), page["default_plotly_count"])
+        self.assertEqual(len(app.dataframe), page["default_dataframe_count"])
+        self.assertEqual(list(app.dataframe[0].value.shape), page["default_dataframe_shape"])
+        self.assertEqual(
+            list(app.dataframe[0].value.columns),
+            page["default_dataframe_columns"],
+        )
+        self.assertEqual(chart_contract(app), self.fixture["default_charts"])
+        captions = [item.value for item in app.caption]
+        runtime_caption = next(
+            (caption for caption in captions if caption.startswith("Analysis runtime:")),
+            None,
+        )
+        self.assertIsNotNone(runtime_caption)
+        self.assertRegex(runtime_caption, r"^Analysis runtime: \d+\.\d{2} s$")
+
     def test_analysis_runtime_is_reported_in_sidebar(self) -> None:
         app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
+        app.button(key="run_analysis").click()
+        app.run(timeout=120)
         self.assertFalse(app.exception)
         captions = [item.value for item in app.caption]
         runtime_caption = next(
@@ -162,6 +208,7 @@ class StreamlitSurfaceTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
         app.segmented_control[1].set_value("Compare both")
         app.run(timeout=120)
+        click_run_analysis(app)
         self.assertFalse(app.exception)
 
         no_more_specs = []
@@ -200,6 +247,7 @@ class StreamlitSurfaceTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
         app.segmented_control[1].set_value("Compare both")
         app.run(timeout=120)
+        click_run_analysis(app)
         self.assertFalse(app.exception)
 
         button_keys = [button.key for button in app.button]
@@ -230,6 +278,7 @@ class StreamlitSurfaceTests(unittest.TestCase):
         app.segmented_control[0].set_value("Whole population")
         app.segmented_control[1].set_value("Compare both")
         app.run(timeout=120)
+        click_run_analysis(app)
         self.assertFalse(app.exception)
 
         button_keys = [button.key for button in app.button]
@@ -249,6 +298,7 @@ class StreamlitSurfaceTests(unittest.TestCase):
         app = AppTest.from_file(str(APP_FILE)).run(timeout=120)
         app.segmented_control[1].set_value("Compare both")
         app.run(timeout=120)
+        click_run_analysis(app)
         self.assertFalse(app.exception)
 
         button_keys = [button.key for button in app.button]

@@ -52,6 +52,7 @@ CAT_COLORS = {
     "Negatively charged": "#BE123C",
     "Special (Cys/Gly/Pro)": "#7C3AED",
 }
+ANALYSIS_STATE_KEY = "phase9_analysis_result"
 
 
 STYLE_HTML = f"""
@@ -413,6 +414,35 @@ def run_cached(n_gen: int, copies: int, at: float, ag: float, ac: float, seed: i
     random.seed(seed)
     exp = _engine_run_experiment(n_gen, matrix, start_weights)
     return sim.to_legacy_tuple(), exp.to_legacy_tuple()
+
+
+def analysis_signature(n_gen: int, copies: int, user_probs: tuple[float, float, float],
+                       preset_probs: tuple[float, float, float], seed: int) -> tuple:
+    return (
+        int(n_gen),
+        int(copies),
+        tuple(float(value) for value in user_probs),
+        tuple(float(value) for value in preset_probs),
+        int(seed),
+    )
+
+
+def render_pre_run_guidance(settings_changed: bool) -> None:
+    st.html('<span id="main-results"></span>')
+    with st.container(border=True):
+        st.subheader("Ready when you are")
+        if settings_changed:
+            st.caption(
+                "Sidebar settings changed. Press Run analysis to refresh the charts and tables."
+            )
+        else:
+            st.caption(
+                "Press Run analysis to compute charts and tables for the current sidebar settings."
+            )
+        st.caption(
+            "The app waits here so Streamlit Cloud can load the interface before the heavier "
+            "codon simulations begin."
+        )
 
 
 def codon_label(codon: str) -> str:
@@ -1873,43 +1903,98 @@ def main():
             bind="query-params",
         )
         generation = st.slider("Codon-outcome generation", 1, int(n_gen), min(5, int(n_gen)))
+        st.space("small")
+        run_requested = st.button(
+            "Run analysis",
+            type="primary",
+            icon=":material/play_arrow:",
+            key="run_analysis",
+            width="stretch",
+        )
 
-    loading_slot = st.empty()
-    run_started_at = time.perf_counter()
-    with loading_slot.container():
-        st.html(
-            """
-            <div class="dna-loader phase8-run-guidance" role="status" aria-live="polite">
-                <div class="dna-helix" aria-hidden="true">
-                    <span class="dna-rung"></span>
-                    <span class="dna-rung"></span>
-                    <span class="dna-rung"></span>
+    current_signature = analysis_signature(
+        int(n_gen),
+        int(copies),
+        user_probs,
+        preset_probs,
+        int(seed),
+    )
+
+    if run_requested:
+        loading_slot = st.empty()
+        run_started_at = time.perf_counter()
+        with loading_slot.container():
+            st.html(
+                """
+                <div class="dna-loader phase8-run-guidance" role="status" aria-live="polite">
+                    <div class="dna-helix" aria-hidden="true">
+                        <span class="dna-rung"></span>
+                        <span class="dna-rung"></span>
+                        <span class="dna-rung"></span>
+                    </div>
+                    <div>
+                        <strong>Mutating codon populations</strong>
+                        <small>Twisting through generations and category states.</small>
+                    </div>
                 </div>
-                <div>
-                    <strong>Mutating codon populations</strong>
-                    <small>Twisting through generations and category states.</small>
-                </div>
-            </div>
-            """
-        )
-        user_sim_legacy, user_exp_legacy = run_cached(
-            int(n_gen),
-            int(copies),
-            *user_probs,
-            int(seed),
-        )
-        preset_sim_legacy, preset_exp_legacy = run_cached(
-            int(n_gen),
-            int(copies),
-            *preset_probs,
-            int(seed),
-        )
-    loading_slot.empty()
-    run_elapsed = time.perf_counter() - run_started_at
+                """
+            )
+            user_sim_legacy, user_exp_legacy = run_cached(
+                int(n_gen),
+                int(copies),
+                *user_probs,
+                int(seed),
+            )
+            preset_sim_legacy, preset_exp_legacy = run_cached(
+                int(n_gen),
+                int(copies),
+                *preset_probs,
+                int(seed),
+            )
+        loading_slot.empty()
+        st.session_state[ANALYSIS_STATE_KEY] = {
+            "signature": current_signature,
+            "elapsed": time.perf_counter() - run_started_at,
+            "user_sim_legacy": user_sim_legacy,
+            "user_exp_legacy": user_exp_legacy,
+            "preset_sim_legacy": preset_sim_legacy,
+            "preset_exp_legacy": preset_exp_legacy,
+        }
+
+    analysis_result = st.session_state.get(ANALYSIS_STATE_KEY)
+    settings_changed = bool(
+        analysis_result and analysis_result.get("signature") != current_signature
+    )
 
     with st.sidebar:
         st.divider()
-        st.caption(f"Analysis runtime: {run_elapsed:.2f} s")
+        if analysis_result and not settings_changed:
+            st.caption(f"Analysis runtime: {analysis_result['elapsed']:.2f} s")
+        elif settings_changed:
+            st.caption("Analysis runtime: settings changed; run again.")
+        else:
+            st.caption("Analysis runtime: not run yet.")
+
+    if not analysis_result or settings_changed:
+        st.caption("Charts and tables below preserve the accepted Phase 6 data display.")
+        st.caption(
+            "Use these results as a guided reading path: first the headline metrics, then the charts, then the tables."
+        )
+        if dashboard_view == "Whole population":
+            st.selectbox(
+                "Trait drilldown",
+                TRAIT_NAMES,
+                key="whole_population_trait",
+                bind="query-params",
+                help="Choose a starting trait to show one survival line per codon in that trait.",
+            )
+        render_pre_run_guidance(settings_changed)
+        return
+
+    user_sim_legacy = analysis_result["user_sim_legacy"]
+    user_exp_legacy = analysis_result["user_exp_legacy"]
+    preset_sim_legacy = analysis_result["preset_sim_legacy"]
+    preset_exp_legacy = analysis_result["preset_exp_legacy"]
 
     user_sim = ExactSimulationResult.from_legacy_tuple(user_sim_legacy)
     user_exp = SampledSimulationResult.from_legacy_tuple(user_exp_legacy)
